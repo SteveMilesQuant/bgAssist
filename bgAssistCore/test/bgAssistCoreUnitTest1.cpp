@@ -9,6 +9,7 @@ using namespace std;
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <glm/gtx/transform.hpp>
 using namespace glm;
 
 
@@ -69,13 +70,37 @@ int main(void)
 	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
 	GLuint TextureID = glGetUniformLocation(programID, "prismTopTexture");
 
+	// Create camera
+	glm::mat4 Projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
+	glm::mat4 View = glm::lookAt(
+		glm::vec3(0, -2, 6), // Camera location, in World Space
+		glm::vec3(0, 0, 0), // and looks at the origin
+		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
+	);
 
+	// Hex prism
+	prismTop hexPrism(6);
+	hexPrism.setCamera(&View);
+	hexPrism.setProjection(&Projection);
+	hexPrism.setScale(vec3(1.0f, 1.0f, 1.0f / 10.0f));
+	hexPrism.setTranslation(vec3(1.5f, 0.0f, 0.0f));
+	hexPrism.updateModelMatrix();
+
+	hexPrism.setUvScale(vec2(0.5, 0.5));
+	hexPrism.setUvCenter(vec2(0.5, 0.5));
+	string imagePath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/test/images/";
+	string unicornPath = imagePath + "unicorn.bmp";
+	hexPrism.loadBMP(unicornPath.c_str());
+
+	hexPrism.passBuffersToGLM(GL_DYNAMIC_DRAW);
+	hexPrism.updateMVP();
 
 	do {
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(programID);
 
+		hexPrism.draw(MatrixID, TextureID);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
