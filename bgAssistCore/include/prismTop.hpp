@@ -61,12 +61,17 @@ public:
 	void dragImageBegin() { startUvCenter = uvCenter; }
 	void dragImage(vec2 shiftFromStart) { setUvCenter(startUvCenter+ shiftFromStart); }
 
+	// Action function pointers
+	void (*glfwCursorPosCallback)(GLFWwindow* window, double x, double y);
+	void (*doWhenSelected)(prismTop * prismTop);
+
 private:
 	int nSides; // number of sides in the polygon
 
 	// Transformation information for the whole object
 	vec3 scaling;
 	vec3 translation;
+	vec3 startTranslation;
 	GLfloat rotationRadians;
 	vec3 rotationAxis;
 	mat4 *projection;

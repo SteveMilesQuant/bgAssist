@@ -33,6 +33,9 @@ prismTop::prismTop(int nSidesIn) {
 	minCoords = vec3(0, 0, -1);
 
 	imageMovedFlag = false;
+
+	doWhenSelected = NULL;
+	glfwCursorPosCallback = NULL;
 }
 
 

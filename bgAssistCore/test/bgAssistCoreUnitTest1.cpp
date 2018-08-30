@@ -5,12 +5,125 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <vector>
 using namespace std;
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/gtx/transform.hpp>
 using namespace glm;
+
+#include <glfwExt.hpp>
+
+
+// World space information
+class prismTop * selectedPrism = NULL;
+struct pair<double, double> dragMouseStartPos(-1.0, -1.0);
+class vector<prismTop *> allPrisms;
+
+
+static prismTop * findSelectedPrism(GLFWwindow* window) {
+	vector<prismTop *>::iterator prismIter = allPrisms.begin();
+	int screenWidth, screenHeight;
+	vec3 origin, direction;
+	float intersection_distance;
+
+	glfwGetWindowSize(window, &screenWidth, &screenHeight);
+	glfwGetCursorPos(window, &dragMouseStartPos.first, &dragMouseStartPos.second);
+
+	screenPosToWorldRay(
+		(int)dragMouseStartPos.first,
+		screenHeight - (int)dragMouseStartPos.second,
+		screenWidth, screenHeight,
+		(*prismIter)->getCamera(),
+		(*prismIter)->getProjection(),
+		origin,
+		direction
+	);
+
+	for (; prismIter != allPrisms.end(); prismIter++) {
+		if (testRayOBBIntersection(
+			origin,
+			direction,
+			(*prismIter)->getMinCoords(),
+			(*prismIter)->getMaxCoords(),
+			(*prismIter)->getModelMatrix(),
+			intersection_distance)
+			) {
+			return *prismIter;
+		}
+	}
+
+	return NULL;
+}
+
+static void dragSelectedPrismImage(GLFWwindow* window, double x, double y)
+{
+	vec2 shift;
+	int width, height;
+	glfwGetWindowSize(window, &width, &height);
+	shift.x = (float)(dragMouseStartPos.first - x) / width;
+	shift.y = (float)(y - dragMouseStartPos.second) / height;
+
+	if(selectedPrism) selectedPrism->dragImage(shift);
+}
+
+
+static void dragSelectedPrism(GLFWwindow* window, double x, double y)
+{
+	if (selectedPrism) {
+		int screenWidth, screenHeight;
+		float t;
+		vec3 origin, direction, newPosition;
+
+		glfwGetWindowSize(window, &screenWidth, &screenHeight);
+		screenPosToWorldRay(
+			(int)x,
+			screenHeight - (int)y,
+			screenWidth, screenHeight,
+			selectedPrism->getCamera(),
+			selectedPrism->getProjection(),
+			origin,
+			direction
+		);
+
+		t = origin.z / direction.z;
+		newPosition = origin - t * direction;
+
+		selectedPrism->setTranslation(newPosition);
+		selectedPrism->updateModelMatrix();
+		selectedPrism->updateMVP();
+	}
+}
+
+// noteMousePosOnClick notes the start position of a drag
+static void noteMousePosOnClick(GLFWwindow* window, int button, int action, int mods)
+{
+	if (button == GLFW_MOUSE_BUTTON_LEFT) {
+		if (action == GLFW_PRESS) {
+			selectedPrism = findSelectedPrism(window);
+
+			if (selectedPrism) {
+				if(selectedPrism->doWhenSelected) selectedPrism->doWhenSelected(selectedPrism);
+				glfwSetCursorPosCallback(window, selectedPrism->glfwCursorPosCallback);
+			}
+			else {
+				dragMouseStartPos.first = -1.0;
+				dragMouseStartPos.second = -1.0;
+				glfwSetCursorPosCallback(window, NULL);
+			}
+		}
+		else { // action == GLFW_RELEASE
+			dragMouseStartPos.first = -1.0;
+			dragMouseStartPos.second = -1.0;
+			selectedPrism = NULL;
+		}
+	}
+}
+
+void dragPrismImageBegin(prismTop * thisPrism) {
+	if (thisPrism) thisPrism->dragImageBegin();
+}
 
 
 int main(void)
@@ -55,10 +168,12 @@ int main(void)
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
 
-
-
 	// Dark blue background
 	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+
+	// Set callbacks
+	glfwSetMouseButtonCallback(window, noteMousePosOnClick);
+	glfwSetCursorPosCallback(window, NULL);
 
 	// Load shaders
 	string shaderPath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/shaders/";
@@ -80,6 +195,8 @@ int main(void)
 
 	// Hex prism
 	prismTop hexPrism(6);
+	hexPrism.glfwCursorPosCallback = dragSelectedPrismImage;
+	hexPrism.doWhenSelected = dragPrismImageBegin;
 	hexPrism.setCamera(&View);
 	hexPrism.setProjection(&Projection);
 	hexPrism.setScale(vec3(1.0f, 1.0f, 1.0f / 10.0f));
@@ -94,6 +211,25 @@ int main(void)
 
 	hexPrism.passBuffersToGLM(GL_DYNAMIC_DRAW);
 	hexPrism.updateMVP();
+	allPrisms.push_back(&hexPrism);
+
+	// Penta prism
+	prismTop pentaPrism(5);
+	pentaPrism.glfwCursorPosCallback = dragSelectedPrism;
+	hexPrism.doWhenSelected = NULL;
+	pentaPrism.setCamera(&View);
+	pentaPrism.setProjection(&Projection);
+	pentaPrism.setScale(vec3(1.0f, 1.0f, 1.0f / 10.0f));
+	pentaPrism.setTranslation(vec3(-1.5f, 0.0f, 0.0f));
+	pentaPrism.updateModelMatrix();
+
+	pentaPrism.setUvScale(vec2(0.5, 0.5));
+	pentaPrism.setUvCenter(vec2(0.5, 0.5));
+	pentaPrism.loadBMP(unicornPath.c_str());
+
+	pentaPrism.passBuffersToGLM(GL_STATIC_DRAW);
+	pentaPrism.updateMVP();
+	allPrisms.push_back(&pentaPrism);
 
 	do {
 
@@ -101,6 +237,7 @@ int main(void)
 		glUseProgram(programID);
 
 		hexPrism.draw(MatrixID, TextureID);
+		pentaPrism.draw(MatrixID, TextureID);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
