@@ -57,15 +57,24 @@ static prismTop * findSelectedPrism(GLFWwindow* window) {
 	return NULL;
 }
 
+
+void dragPrismImageBegin(prismTop * thisPrism) {
+	if (thisPrism) thisPrism->dragImageBegin();
+}
+
 static void dragSelectedPrismImage(GLFWwindow* window, double x, double y)
 {
 	vec2 shift;
 	int width, height;
+
+	if (dragMouseStartPos.first < 0 || dragMouseStartPos.second < 0 || selectedPrism == NULL)
+		return;
+
 	glfwGetWindowSize(window, &width, &height);
 	shift.x = (float)(dragMouseStartPos.first - x) / width;
 	shift.y = (float)(y - dragMouseStartPos.second) / height;
 
-	if(selectedPrism) selectedPrism->dragImage(shift);
+	selectedPrism->dragImage(shift);
 }
 
 
@@ -104,13 +113,13 @@ static void noteMousePosOnClick(GLFWwindow* window, int button, int action, int 
 			selectedPrism = findSelectedPrism(window);
 
 			if (selectedPrism) {
-				if(selectedPrism->doWhenSelected) selectedPrism->doWhenSelected(selectedPrism);
-				glfwSetCursorPosCallback(window, selectedPrism->glfwCursorPosCallback);
+				if (selectedPrism && selectedPrism->doWhenSelected) {
+					selectedPrism->doWhenSelected(selectedPrism);
+				}
 			}
 			else {
 				dragMouseStartPos.first = -1.0;
 				dragMouseStartPos.second = -1.0;
-				glfwSetCursorPosCallback(window, NULL);
 			}
 		}
 		else { // action == GLFW_RELEASE
@@ -121,9 +130,13 @@ static void noteMousePosOnClick(GLFWwindow* window, int button, int action, int 
 	}
 }
 
-void dragPrismImageBegin(prismTop * thisPrism) {
-	if (thisPrism) thisPrism->dragImageBegin();
+
+static void dragAction(GLFWwindow* window, double x, double y) {
+	if (selectedPrism && selectedPrism->glfwCursorPosCallback) {
+		selectedPrism->glfwCursorPosCallback(window, x, y);
+	}
 }
+
 
 
 int main(void)
@@ -173,7 +186,7 @@ int main(void)
 
 	// Set callbacks
 	glfwSetMouseButtonCallback(window, noteMousePosOnClick);
-	glfwSetCursorPosCallback(window, NULL);
+	glfwSetCursorPosCallback(window, dragAction);
 
 	// Load shaders
 	string shaderPath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/shaders/";
@@ -208,6 +221,7 @@ int main(void)
 	string imagePath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/test/images/";
 	string unicornPath = imagePath + "unicorn.bmp";
 	hexPrism.loadBMP(unicornPath.c_str());
+	hexPrism.dragImageBegin();
 
 	hexPrism.passBuffersToGLM(GL_DYNAMIC_DRAW);
 	hexPrism.updateMVP();
