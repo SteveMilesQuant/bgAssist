@@ -230,7 +230,7 @@ int main(void)
 	// Penta prism
 	prismTop pentaPrism(5);
 	pentaPrism.glfwCursorPosCallback = dragSelectedPrism;
-	hexPrism.doWhenSelected = NULL;
+	pentaPrism.doWhenSelected = NULL;
 	pentaPrism.setCamera(&View);
 	pentaPrism.setProjection(&Projection);
 	pentaPrism.setScale(vec3(1.0f, 1.0f, 1.0f / 10.0f));
@@ -249,6 +249,14 @@ int main(void)
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(programID);
+
+		/*if (dragMouseStartPos.first >= 0.0 && dragMouseStartPos.second >= 0.0 &&
+			selectedPrism == &hexPrism && selectedPrism->glfwCursorPosCallback)
+		{
+			double xpos, ypos;
+			glfwGetCursorPos(window, &xpos, &ypos);
+			dragSelectedPrismImage(window, xpos, ypos);
+		}*/
 
 		hexPrism.draw(MatrixID, TextureID);
 		pentaPrism.draw(MatrixID, TextureID);
