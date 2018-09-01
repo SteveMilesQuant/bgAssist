@@ -32,7 +32,9 @@ prismTop::prismTop(int nSidesIn) {
 	maxCoords = vec3(0, 0, 1);
 	minCoords = vec3(0, 0, -1);
 
-	imageMovedFlag = false;
+	imageMovedFlag = true;
+	updateModelMatrixFlag = true;
+	updateMVPFlag = true;
 
 	doWhenSelected = NULL;
 	glfwCursorPosCallback = NULL;
@@ -59,11 +61,34 @@ void prismTop::passBuffersToGLM(GLuint uvStaticOrDynamic) {
 
 // Update the model matrix whenever you change the position of the object
 void prismTop::updateModelMatrix() { 
+	if (!updateModelMatrixFlag) return;
 	modelMatrix = translate(mat4(), translation) * rotate(rotationRadians, rotationAxis) * scale(scaling);
+	updateModelMatrixFlag = false;
+	updateMVPFlag = true;
+}
+
+// Update the MPV whenever the camera, projection, or matrix changes
+void prismTop::updateMVP() {
+	if (!updateMVPFlag) return;
+	if (projection && camera) {
+		MVP = (*projection) * (*camera) * modelMatrix;
+	}
+	else if (projection) {
+		MVP = (*projection) * modelMatrix;
+	}
+	else if (camera) {
+		MVP = (*camera) * modelMatrix;
+	}
+	else {
+		MVP = modelMatrix;
+	}
+	updateMVPFlag = false;
 }
 
 // Update the face image when you move it
 void prismTop::upateImage() {
+	if (!imageMovedFlag) return;
+
 	int nCoordinates = nTriangles() * 9;
 	int size = sizeof(GLfloat)*nCoordinates;
 	fillVerticesAndUVs();
@@ -74,8 +99,11 @@ void prismTop::upateImage() {
 
 // Draw the object in the main loop
 void prismTop::draw(GLuint MatrixID, GLuint TextureID) {
-	// If the image moved, update its position with gl
-	if (imageMovedFlag) upateImage();
+	// Update the image, model matrix and MVP
+	// These routines will check if this is needed
+	upateImage();
+	updateModelMatrix();
+	updateMVP();
 
 	// Send our transformation to the currently bound shader, 
 	// in the "MVP" uniform

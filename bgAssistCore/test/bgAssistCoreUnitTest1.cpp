@@ -102,8 +102,6 @@ static void dragSelectedPrism(GLFWwindow* window, double x, double y)
 		newPosition = origin + t * direction;
 
 		selectedPrism->setTranslation(newPosition);
-		selectedPrism->updateModelMatrix();
-		selectedPrism->updateMVP();
 	}
 }
 
@@ -217,17 +215,14 @@ int main(void)
 	hexPrism.setProjection(&Projection);
 	hexPrism.setScale(vec3(1.0f, 1.0f, 1.0f / 10.0f));
 	hexPrism.setTranslation(vec3(1.5f, 0.0f, 0.0f));
-	hexPrism.updateModelMatrix();
 
 	hexPrism.setUvScale(vec2(0.5, 0.5));
 	hexPrism.setUvCenter(vec2(0.5, 0.5));
 	string imagePath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/test/images/";
 	string unicornPath = imagePath + "unicorn.bmp";
 	hexPrism.loadBMP(unicornPath.c_str());
-	hexPrism.dragImageBegin();
 
 	hexPrism.passBuffersToGLM(GL_DYNAMIC_DRAW);
-	hexPrism.updateMVP();
 	allPrisms.push_back(&hexPrism);
 
 	// Penta prism
@@ -238,14 +233,12 @@ int main(void)
 	pentaPrism.setProjection(&Projection);
 	pentaPrism.setScale(vec3(1.0f, 1.0f, 1.0f / 10.0f));
 	pentaPrism.setTranslation(vec3(-1.5f, 0.0f, 0.0f));
-	pentaPrism.updateModelMatrix();
 
 	pentaPrism.setUvScale(vec2(0.5, 0.5));
 	pentaPrism.setUvCenter(vec2(0.5, 0.5));
 	pentaPrism.loadBMP(unicornPath.c_str());
 
 	pentaPrism.passBuffersToGLM(GL_STATIC_DRAW);
-	pentaPrism.updateMVP();
 	allPrisms.push_back(&pentaPrism);
 
 	do {

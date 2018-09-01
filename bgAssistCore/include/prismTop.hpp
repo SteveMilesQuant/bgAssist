@@ -24,11 +24,11 @@ public:
 	const int nTriangles() { return nSides * 4; }
 
 	// Setters and getters for transformations in the model matrix
-	void setScale(vec3 inScaling) { scaling = inScaling; }
-	void setTranslation(vec3 inTranslation) { translation = inTranslation; }
-	void setCamera(mat4 *inCamera) { camera = inCamera; }
-	void setProjection(mat4 *inProjection) { projection = inProjection; }
-	void setRotation(GLfloat inRadians, vec3 inAxis) { rotationRadians = inRadians;  rotationAxis = inAxis; }
+	void setScale(vec3 inScaling) { scaling = inScaling; updateModelMatrixFlag = true; }
+	void setTranslation(vec3 inTranslation) { translation = inTranslation; updateModelMatrixFlag = true; }
+	void setRotation(GLfloat inRadians, vec3 inAxis) { rotationRadians = inRadians;  rotationAxis = inAxis;  updateModelMatrixFlag = true; }
+	void setCamera(mat4 *inCamera) { camera = inCamera; updateMVPFlag = true; }
+	void setProjection(mat4 *inProjection) { projection = inProjection; updateMVPFlag = true; }
 	void setUvScale(vec2 uvScaleIn) { if (uvScaleIn == uvScale) return;  uvScale = uvScaleIn; imageMovedFlag = true; }
 	void setUvCenter(vec2 uvCenterIn) { if (uvCenterIn == uvCenter) return;  uvCenter = uvCenterIn; imageMovedFlag = true; }
 	vec3 getScale() { return scaling; }
@@ -43,10 +43,6 @@ public:
 
 	// Pass the buffers to GLM only once: after you generate them
 	void passBuffersToGLM(GLuint uvStaticOrDynamic);
-
-	// Update the model matrix whenever you change the position of the object
-	void updateModelMatrix();
-	void updateMVP() { MVP = (*projection) * (*camera) * modelMatrix; }
 
 	// Image loaders (from opengl tutorial's texture and shader files)
 	void loadBMP(const char * imagepath) { texture = loadBMP_custom(imagepath); }
@@ -80,6 +76,8 @@ private:
 	mat4 *camera;
 	mat4 modelMatrix; // model matrix
 	mat4 MVP; // transformation matrix passed to GLM
+	GLboolean updateModelMatrixFlag;
+	GLboolean updateMVPFlag;
 
 	// UV (image mapping) transformation
 	vec2 uvScale;
@@ -102,6 +100,10 @@ private:
 
 	// Fill vertices and uv coords
 	void fillVerticesAndUVs();
+
+	// Update the model matrix whenever you change the position of the object
+	void updateModelMatrix();
+	void updateMVP();
 };
 
 
