@@ -38,6 +38,7 @@ prismTop::prismTop(int nSidesIn) {
 
 	doWhenSelected = NULL;
 	glfwCursorPosCallback = NULL;
+	timeMVPUpdated = 0;
 }
 
 
@@ -69,20 +70,23 @@ void prismTop::updateModelMatrix() {
 
 // Update the MPV whenever the camera, projection, or matrix changes
 void prismTop::updateMVP() {
+	if (projection && projection->timeUpdated() > timeMVPUpdated) updateMVPFlag = true;
+	if (camera && camera->timeUpdated() > timeMVPUpdated) updateMVPFlag = true;
 	if (!updateMVPFlag) return;
 	if (projection && camera) {
-		MVP = (*projection) * (*camera) * modelMatrix;
+		MVP = projection->getMatrix() * camera->getMatrix() * modelMatrix;
 	}
 	else if (projection) {
-		MVP = (*projection) * modelMatrix;
+		MVP = projection->getMatrix() * modelMatrix;
 	}
 	else if (camera) {
-		MVP = (*camera) * modelMatrix;
+		MVP = camera->getMatrix() * modelMatrix;
 	}
 	else {
 		MVP = modelMatrix;
 	}
 	updateMVPFlag = false;
+	timeMVPUpdated = glfwGetTime();
 }
 
 // Update the face image when you move it

@@ -5,6 +5,8 @@
 
 #include <texture.hpp>
 
+#include <glfwExt.hpp>
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -27,14 +29,14 @@ public:
 	void setScale(vec3 inScaling) { scaling = inScaling; updateModelMatrixFlag = true; }
 	void setTranslation(vec3 inTranslation) { translation = inTranslation; updateModelMatrixFlag = true; }
 	void setRotation(GLfloat inRadians, vec3 inAxis) { rotationRadians = inRadians;  rotationAxis = inAxis;  updateModelMatrixFlag = true; }
-	void setCamera(mat4 *inCamera) { camera = inCamera; updateMVPFlag = true; }
-	void setProjection(mat4 *inProjection) { projection = inProjection; updateMVPFlag = true; }
+	void setCamera(timedMat4 *inCamera) { camera = inCamera; updateMVPFlag = true; }
+	void setProjection(timedMat4 *inProjection) { projection = inProjection; updateMVPFlag = true; }
 	void setUvScale(vec2 uvScaleIn) { if (uvScaleIn == uvScale) return;  uvScale = uvScaleIn; imageMovedFlag = true; }
 	void setUvCenter(vec2 uvCenterIn) { if (uvCenterIn == uvCenter) return;  uvCenter = uvCenterIn; imageMovedFlag = true; }
 	vec3 getScale() { return scaling; }
 	vec3 getTranslation() { return translation; }
-	mat4 & getCamera() { return *camera; }
-	mat4 & getProjection() { return *projection; }
+	timedMat4 & getCamera() { return *camera; }
+	timedMat4 & getProjection() { return *projection; }
 	mat4 & getModelMatrix() { return modelMatrix; }
 	vec3 & getMaxCoords() { return maxCoords; }
 	vec3 & getMinCoords() { return minCoords; }
@@ -72,12 +74,13 @@ private:
 	vec3 startTranslation;
 	GLfloat rotationRadians;
 	vec3 rotationAxis;
-	mat4 *projection;
-	mat4 *camera;
+	timedMat4 *projection;
+	timedMat4 *camera;
 	mat4 modelMatrix; // model matrix
 	mat4 MVP; // transformation matrix passed to GLM
 	GLboolean updateModelMatrixFlag;
 	GLboolean updateMVPFlag;
+	double timeMVPUpdated;
 
 	// UV (image mapping) transformation
 	vec2 uvScale;

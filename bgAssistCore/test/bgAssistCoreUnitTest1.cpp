@@ -35,8 +35,8 @@ static prismTop * findSelectedPrism(GLFWwindow* window) {
 		(int)dragMouseStartPos.first,
 		screenHeight - (int)dragMouseStartPos.second,
 		screenWidth, screenHeight,
-		(*prismIter)->getCamera(),
-		(*prismIter)->getProjection(),
+		(*prismIter)->getCamera().getMatrix(),
+		(*prismIter)->getProjection().getMatrix(),
 		origin,
 		direction
 	);
@@ -91,8 +91,8 @@ static void dragSelectedPrism(GLFWwindow* window, double x, double y)
 			(int)x,
 			screenHeight - (int)y,
 			screenWidth, screenHeight,
-			selectedPrism->getCamera(),
-			selectedPrism->getProjection(),
+			selectedPrism->getCamera().getMatrix(),
+			selectedPrism->getProjection().getMatrix(),
 			origin,
 			direction
 		);
@@ -200,18 +200,19 @@ int main(void)
 	GLuint TextureID = glGetUniformLocation(programID, "prismTopTexture");
 
 	// Create camera
-	glm::mat4 Projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f);
+	timedMat4 Projection = timedMat4(glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f));
 	glm::mat4 View = glm::lookAt(
 		glm::vec3(0, -2, 6), // Camera location, in World Space
 		glm::vec3(0, 0, 0), // and looks at the origin
 		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 	);
+	timedMat4 Camera = timedMat4(View);
 
 	// Hex prism
 	prismTop hexPrism(6);
 	hexPrism.glfwCursorPosCallback = dragSelectedPrismImage;
 	hexPrism.doWhenSelected = dragPrismImageBegin;
-	hexPrism.setCamera(&View);
+	hexPrism.setCamera(&Camera);
 	hexPrism.setProjection(&Projection);
 	hexPrism.setScale(vec3(1.0f, 1.0f, 1.0f / 10.0f));
 	hexPrism.setTranslation(vec3(1.5f, 0.0f, 0.0f));
@@ -229,7 +230,7 @@ int main(void)
 	prismTop pentaPrism(5);
 	pentaPrism.glfwCursorPosCallback = dragSelectedPrism;
 	pentaPrism.doWhenSelected = NULL;
-	pentaPrism.setCamera(&View);
+	pentaPrism.setCamera(&Camera);
 	pentaPrism.setProjection(&Projection);
 	pentaPrism.setScale(vec3(1.0f, 1.0f, 1.0f / 10.0f));
 	pentaPrism.setTranslation(vec3(-1.5f, 0.0f, 0.0f));
@@ -246,8 +247,10 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(programID);
 
-		hexPrism.draw(MatrixID, TextureID);
-		pentaPrism.draw(MatrixID, TextureID);
+		vector<prismTop *>::iterator prismIter = allPrisms.begin();
+		for (; prismIter != allPrisms.end(); prismIter++) {
+			(*prismIter)->draw(MatrixID, TextureID);
+		}
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
