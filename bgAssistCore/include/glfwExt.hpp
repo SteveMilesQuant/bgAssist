@@ -6,20 +6,22 @@
 #include <glm/gtx/transform.hpp>
 using namespace glm;
 
-class timedMat4 {
-public:
-	timedMat4() { matrix = mat4(1.0f); noteTime(); }
-	timedMat4(mat4 inMatrix) { setMatrix(inMatrix); }
+namespace glm {
+	class timedMat4 {
+	public:
+		timedMat4() { setMatrix(mat4(1.0f)); }
+		timedMat4(mat4 inMatrix) { setMatrix(inMatrix); }
 
-	void setMatrix(mat4 inMatrix) { matrix = inMatrix; noteTime();}
-	mat4 getMatrix() { return matrix; }
-	double timeUpdated() { return timeWasUpdated; }
+		void setMatrix(mat4 inMatrix) { matrix = inMatrix; noteTime(); }
+		mat4 getMatrix() { return matrix; }
+		double timeUpdated() { return timeWasUpdated; }
 
-private:
-	mat4 matrix;
-	double timeWasUpdated;
+	private:
+		mat4 matrix;
+		double timeWasUpdated;
 
-	void noteTime() { timeWasUpdated = glfwGetTime(); }
+		void noteTime() { timeWasUpdated = glfwGetTime(); }
+	};
 };
 
 void screenPosToWorldRay(

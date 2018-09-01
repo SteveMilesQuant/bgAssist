@@ -23,7 +23,7 @@ public:
 	~prismTop() { delete[] g_vertex_buffer_data; delete[] g_uv_buffer_data; }
 
 	// How many triangles are in this object?
-	const int nTriangles() { return nSides * 4; }
+	const int nTriangles() { return nSides * 3; }
 
 	// Setters and getters for transformations in the model matrix
 	void setScale(vec3 inScaling) { scaling = inScaling; updateModelMatrixFlag = true; }

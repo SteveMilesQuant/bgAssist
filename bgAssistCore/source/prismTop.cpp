@@ -162,6 +162,7 @@ void prismTop::fillVerticesAndUVs() {
 	for (i = 0; i < nSides; i++) {
 		if (i == nSides - 1) nextPoint = startPoint;
 
+		// Update OBB (min and max coordinates used for picking and collision)
 		minCoords[0] = min(minCoords[0], thisPoint[0]);
 		minCoords[1] = min(minCoords[1], thisPoint[1]);
 		maxCoords[0] = max(maxCoords[0], thisPoint[0]);
@@ -185,25 +186,6 @@ void prismTop::fillVerticesAndUVs() {
 		vertices[vertexIdx] = nextPoint[1];
 		uvs[uvIdx++] = vertices[vertexIdx++] * uvScale[1] + uvCenter[1];
 		vertices[vertexIdx++] = 1.0f;
-
-		// Back triangle
-		vertices[vertexIdx] = 0.0f;
-		uvs[uvIdx++] = vertices[vertexIdx++] * uvScale[0] + uvCenter[0];
-		vertices[vertexIdx] = 0.0f;
-		uvs[uvIdx++] = vertices[vertexIdx++] * uvScale[1] + uvCenter[1];
-		vertices[vertexIdx++] = -1.0f;
-
-		vertices[vertexIdx] = thisPoint[0];
-		uvs[uvIdx++] = vertices[vertexIdx++] * uvScale[0] + uvCenter[0];
-		vertices[vertexIdx] = thisPoint[1];
-		uvs[uvIdx++] = vertices[vertexIdx++] * uvScale[1] + uvCenter[1];
-		vertices[vertexIdx++] = -1.0f;
-
-		vertices[vertexIdx] = nextPoint[0];
-		uvs[uvIdx++] = vertices[vertexIdx++] * uvScale[0] + uvCenter[0];
-		vertices[vertexIdx] = nextPoint[1];
-		uvs[uvIdx++] = vertices[vertexIdx++] * uvScale[1] + uvCenter[1];
-		vertices[vertexIdx++] = -1.0f;
 
 		// Sides will have a single color using the picture
 		for (j = 0; j < 12; j++) {
