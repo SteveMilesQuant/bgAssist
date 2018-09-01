@@ -84,6 +84,7 @@ static void dragSelectedPrism(GLFWwindow* window, double x, double y)
 		int screenWidth, screenHeight;
 		float t;
 		vec3 origin, direction, newPosition;
+		vec3 prismPosition = selectedPrism->getTranslation();
 
 		glfwGetWindowSize(window, &screenWidth, &screenHeight);
 		screenPosToWorldRay(
@@ -96,8 +97,9 @@ static void dragSelectedPrism(GLFWwindow* window, double x, double y)
 			direction
 		);
 
-		t = origin.z / direction.z;
-		newPosition = origin - t * direction;
+		// Camera ray's intersection with N(0,0,1), p_0(0,0,prismPosition.z)
+		t = (prismPosition.z - origin.z) / direction.z;
+		newPosition = origin + t * direction;
 
 		selectedPrism->setTranslation(newPosition);
 		selectedPrism->updateModelMatrix();
@@ -105,15 +107,15 @@ static void dragSelectedPrism(GLFWwindow* window, double x, double y)
 	}
 }
 
-// noteMousePosOnClick notes the start position of a drag
-static void noteMousePosOnClick(GLFWwindow* window, int button, int action, int mods)
+// Actions for a mouse click
+static void clickAction(GLFWwindow* window, int button, int action, int mods)
 {
 	if (button == GLFW_MOUSE_BUTTON_LEFT) {
 		if (action == GLFW_PRESS) {
 			selectedPrism = findSelectedPrism(window);
 
 			if (selectedPrism) {
-				if (selectedPrism && selectedPrism->doWhenSelected) {
+				if (selectedPrism->doWhenSelected) {
 					selectedPrism->doWhenSelected(selectedPrism);
 				}
 			}
@@ -131,6 +133,7 @@ static void noteMousePosOnClick(GLFWwindow* window, int button, int action, int 
 }
 
 
+// Actions for dragging after a mouse click
 static void dragAction(GLFWwindow* window, double x, double y) {
 	if (selectedPrism && selectedPrism->glfwCursorPosCallback) {
 		selectedPrism->glfwCursorPosCallback(window, x, y);
@@ -185,7 +188,7 @@ int main(void)
 	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 
 	// Set callbacks
-	glfwSetMouseButtonCallback(window, noteMousePosOnClick);
+	glfwSetMouseButtonCallback(window, clickAction);
 	glfwSetCursorPosCallback(window, dragAction);
 
 	// Load shaders
@@ -249,14 +252,6 @@ int main(void)
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(programID);
-
-		/*if (dragMouseStartPos.first >= 0.0 && dragMouseStartPos.second >= 0.0 &&
-			selectedPrism == &hexPrism && selectedPrism->glfwCursorPosCallback)
-		{
-			double xpos, ypos;
-			glfwGetCursorPos(window, &xpos, &ypos);
-			dragSelectedPrismImage(window, xpos, ypos);
-		}*/
 
 		hexPrism.draw(MatrixID, TextureID);
 		pentaPrism.draw(MatrixID, TextureID);

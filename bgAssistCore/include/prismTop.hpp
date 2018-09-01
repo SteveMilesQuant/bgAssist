@@ -31,6 +31,8 @@ public:
 	void setRotation(GLfloat inRadians, vec3 inAxis) { rotationRadians = inRadians;  rotationAxis = inAxis; }
 	void setUvScale(vec2 uvScaleIn) { if (uvScaleIn == uvScale) return;  uvScale = uvScaleIn; imageMovedFlag = true; }
 	void setUvCenter(vec2 uvCenterIn) { if (uvCenterIn == uvCenter) return;  uvCenter = uvCenterIn; imageMovedFlag = true; }
+	vec3 getScale() { return scaling; }
+	vec3 getTranslation() { return translation; }
 	mat4 & getCamera() { return *camera; }
 	mat4 & getProjection() { return *projection; }
 	mat4 & getModelMatrix() { return modelMatrix; }
