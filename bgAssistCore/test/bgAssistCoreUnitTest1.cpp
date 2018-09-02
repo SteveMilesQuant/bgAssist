@@ -228,8 +228,8 @@ int main(void)
 	hexPrism.setUvScale(vec2(0.5, 0.5));
 	hexPrism.setUvCenter(vec2(0.5, 0.5));
 	string imagePath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/test/images/";
-	string unicornPath = imagePath + "unicorn.bmp";
-	hexPrism.loadBMP(unicornPath.c_str());
+	string unicornPath = imagePath + "unicorn_BMP_DXT3_1.DDS";
+	hexPrism.loadDDS(unicornPath.c_str());
 
 	hexPrism.passBuffersToGLM(GL_DYNAMIC_DRAW);
 	allPrisms.push_back(&hexPrism);
@@ -245,7 +245,7 @@ int main(void)
 
 	pentaPrism.setUvScale(vec2(0.5, 0.5));
 	pentaPrism.setUvCenter(vec2(0.5, 0.5));
-	pentaPrism.loadBMP(unicornPath.c_str());
+	pentaPrism.loadDDS(unicornPath.c_str());
 
 	pentaPrism.passBuffersToGLM(GL_STATIC_DRAW);
 	allPrisms.push_back(&pentaPrism);
