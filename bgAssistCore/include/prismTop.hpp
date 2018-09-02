@@ -20,7 +20,7 @@ public:
 	prismTop(int nSidesIn);
 
 	// Desctructor
-	~prismTop() { delete[] g_vertex_buffer_data; delete[] g_uv_buffer_data; }
+	~prismTop();
 
 	// Copy constructor
 	prismTop(const prismTop &inPrismTop);
@@ -91,6 +91,7 @@ private:
 	vec2 startUvCenter;
 	GLboolean imageChangedFlag;
 	GLboolean ddsLoadedFlag;
+	GLboolean copiedTextureFlag;
 
 	// Vertex and uv buffers
 	GLuint vertexbuffer;

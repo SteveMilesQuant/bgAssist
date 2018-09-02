@@ -26,6 +26,7 @@ prismTop::prismTop(int nSidesIn) {
 	maxCoords = vec3(0, 0, 1);
 	minCoords = vec3(0, 0, -1);
 	ddsLoadedFlag = false;
+	copiedTextureFlag = false;
 
 	g_vertex_buffer_data = NULL;
 	g_uv_buffer_data = NULL;
@@ -52,6 +53,7 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 	glfwCursorPosCallback = inPrismTop.glfwCursorPosCallback;
 	ddsLoadedFlag = inPrismTop.ddsLoadedFlag;
 	texture = inPrismTop.texture;
+	copiedTextureFlag = true;
 
 	// Let passBuffersToGLM generate the vertices
 	g_vertex_buffer_data = NULL;
@@ -63,6 +65,14 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 	timeMVPUpdated = 0;
 }
 
+// Desctuctor
+prismTop::~prismTop() {
+	delete[] g_vertex_buffer_data;
+	delete[] g_uv_buffer_data;
+	glDeleteBuffers(1, &vertexbuffer);
+	glDeleteBuffers(1, &uvbuffer);
+	if (!copiedTextureFlag) glDeleteTextures(1, &texture);
+}
 
 // Pass the buffers to GLM only once: after you generate them
 // uvStaticOrDynamic should be GL_DYNAMIC_DRAW if you wish to update
@@ -259,12 +269,14 @@ void prismTop::loadBMP(const char * imagepath) {
 	texture = loadBMP_custom(imagepath);
 	imageChangedFlag = true;
 	ddsLoadedFlag = false;
+	copiedTextureFlag = false;
 }
 
 void prismTop::loadDDS(const char * imagepath) {
 	texture = ::loadDDS(imagepath);
 	imageChangedFlag = true;
 	ddsLoadedFlag = true;
+	copiedTextureFlag = false;
 }
 
 
