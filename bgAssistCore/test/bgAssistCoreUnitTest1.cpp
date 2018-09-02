@@ -201,12 +201,20 @@ int main(void)
 
 	// Create camera
 	timedMat4 Projection = timedMat4(glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f));
-	glm::mat4 View = glm::lookAt(
+	glm::mat4 FrontView = glm::lookAt(
 		glm::vec3(0, -2, 6), // Camera location, in World Space
 		glm::vec3(0, 0, 0), // and looks at the origin
 		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 	);
-	timedMat4 Camera = timedMat4(View);
+	timedMat4 Camera = timedMat4(FrontView);
+
+	glm::mat4 BackView = glm::lookAt(
+		glm::vec3(0, -2, -6), // Camera location, in World Space
+		glm::vec3(0, 0, 0), // and looks at the origin
+		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
+	);
+	GLboolean onFrontView = true;
+	GLboolean viewUpdated = false;
 
 	// Hex prism
 	prismTop hexPrism(6);
@@ -246,6 +254,22 @@ int main(void)
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(programID);
+
+		// This should really be done with a callback
+		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !viewUpdated) {
+			if (onFrontView) {
+				Camera.setMatrix(BackView);
+				onFrontView = false;
+			}
+			else {
+				Camera.setMatrix(FrontView);
+				onFrontView = true;
+			}
+			viewUpdated = true;
+		}
+		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) {
+			viewUpdated = false;
+		}
 
 		vector<prismTop *>::iterator prismIter = allPrisms.begin();
 		for (; prismIter != allPrisms.end(); prismIter++) {

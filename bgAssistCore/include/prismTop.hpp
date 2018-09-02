@@ -22,6 +22,9 @@ public:
 	// Desctructor
 	~prismTop() { delete[] g_vertex_buffer_data; delete[] g_uv_buffer_data; }
 
+	// Copy constructor
+	prismTop(const prismTop &inPrismTop);
+
 	// How many triangles are in this object?
 	const int nTriangles() { return nSides * 3; }
 

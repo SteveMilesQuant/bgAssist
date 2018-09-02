@@ -12,6 +12,7 @@ using namespace std;
 #include <glm/gtx/transform.hpp>
 using namespace glm;
 
+// Constructor
 prismTop::prismTop(int nSidesIn) {
 	nSides = (nSidesIn > 2) ? nSidesIn : 3;
 
@@ -20,24 +21,42 @@ prismTop::prismTop(int nSidesIn) {
 	translation = vec3(0.0f, 0.0f, 0.0f);
 	rotationRadians = 0.0f;
 	rotationAxis = vec3(1.0f, 0.0f, 0.0f);
-	updateModelMatrix();
+	uvScale = vec2(1, 1);
+	uvCenter = vec2(0, 0);
+	maxCoords = vec3(0, 0, 1);
+	minCoords = vec3(0, 0, -1);
 
 	g_vertex_buffer_data = NULL;
 	g_uv_buffer_data = NULL;
-	uvScale[0] = 1.0f;
-	uvScale[1] = 1.0f;
-	uvCenter[0] = 0.0f;
-	uvCenter[1] = 0.0f;
 
-	maxCoords = vec3(0, 0, 1);
-	minCoords = vec3(0, 0, -1);
+	doWhenSelected = NULL;
+	glfwCursorPosCallback = NULL;
 
 	imageMovedFlag = true;
 	updateModelMatrixFlag = true;
 	updateMVPFlag = true;
+	timeMVPUpdated = 0;
+}
 
-	doWhenSelected = NULL;
-	glfwCursorPosCallback = NULL;
+// Copy constructor
+prismTop::prismTop(const prismTop &inPrismTop) {
+	nSides = inPrismTop.nSides;
+	scaling = inPrismTop.scaling;
+	translation = inPrismTop.translation;
+	rotationRadians = inPrismTop.rotationRadians;
+	rotationAxis = inPrismTop.rotationAxis;
+	minCoords = inPrismTop.minCoords;
+	maxCoords = inPrismTop.maxCoords;
+	doWhenSelected = inPrismTop.doWhenSelected;
+	glfwCursorPosCallback = inPrismTop.glfwCursorPosCallback;
+
+	// Let passBuffersToGLM generate the vertices
+	g_vertex_buffer_data = NULL;
+	g_uv_buffer_data = NULL;
+
+	imageMovedFlag = true;
+	updateModelMatrixFlag = true;
+	updateMVPFlag = true;
 	timeMVPUpdated = 0;
 }
 
