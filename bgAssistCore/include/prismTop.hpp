@@ -34,8 +34,8 @@ public:
 	void setRotation(GLfloat inRadians, vec3 inAxis) { rotationRadians = inRadians;  rotationAxis = inAxis;  updateModelMatrixFlag = true; }
 	void setCamera(timedMat4 *inCamera) { camera = inCamera; updateMVPFlag = true; }
 	void setProjection(timedMat4 *inProjection) { projection = inProjection; updateMVPFlag = true; }
-	void setUvScale(vec2 uvScaleIn) { if (uvScaleIn == uvScale) return;  uvScale = uvScaleIn; imageMovedFlag = true; }
-	void setUvCenter(vec2 uvCenterIn) { if (uvCenterIn == uvCenter) return;  uvCenter = uvCenterIn; imageMovedFlag = true; }
+	void setUvScale(vec2 uvScaleIn) { if (uvScaleIn == uvScale) return;  uvScale = uvScaleIn; imageChangedFlag = true; }
+	void setUvCenter(vec2 uvCenterIn) { if (uvCenterIn == uvCenter) return;  uvCenter = uvCenterIn; imageChangedFlag = true; }
 	vec3 getScale() { return scaling; }
 	vec3 getTranslation() { return translation; }
 	timedMat4 & getCamera() { return *camera; }
@@ -50,8 +50,8 @@ public:
 	void passBuffersToGLM(GLuint uvStaticOrDynamic);
 
 	// Image loaders (from opengl tutorial's texture and shader files)
-	void loadBMP(const char * imagepath) { texture = loadBMP_custom(imagepath); }
-	void loadDDS(const char * imagepath) { texture = ::loadDDS(imagepath); }
+	void loadBMP(const char * imagepath);
+	void loadDDS(const char * imagepath);
 
 	// Update the face image when you move it
 	void upateImage();
@@ -89,7 +89,8 @@ private:
 	vec2 uvScale;
 	vec2 uvCenter;
 	vec2 startUvCenter;
-	GLboolean imageMovedFlag;
+	GLboolean imageChangedFlag;
+	GLboolean ddsLoadedFlag;
 
 	// Vertex and uv buffers
 	GLuint vertexbuffer;

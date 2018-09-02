@@ -245,7 +245,8 @@ int main(void)
 
 	pentaPrism.setUvScale(vec2(0.5, 0.5));
 	pentaPrism.setUvCenter(vec2(0.5, 0.5));
-	pentaPrism.loadDDS(unicornPath.c_str());
+	unicornPath = imagePath + "unicorn.bmp"; // use BMP this time
+	pentaPrism.loadBMP(unicornPath.c_str());
 
 	pentaPrism.passBuffersToGLM(GL_STATIC_DRAW);
 	allPrisms.push_back(&pentaPrism);

@@ -25,6 +25,7 @@ prismTop::prismTop(int nSidesIn) {
 	uvCenter = vec2(0, 0);
 	maxCoords = vec3(0, 0, 1);
 	minCoords = vec3(0, 0, -1);
+	ddsLoadedFlag = false;
 
 	g_vertex_buffer_data = NULL;
 	g_uv_buffer_data = NULL;
@@ -32,7 +33,7 @@ prismTop::prismTop(int nSidesIn) {
 	doWhenSelected = NULL;
 	glfwCursorPosCallback = NULL;
 
-	imageMovedFlag = true;
+	imageChangedFlag = true;
 	updateModelMatrixFlag = true;
 	updateMVPFlag = true;
 	timeMVPUpdated = 0;
@@ -49,12 +50,14 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 	maxCoords = inPrismTop.maxCoords;
 	doWhenSelected = inPrismTop.doWhenSelected;
 	glfwCursorPosCallback = inPrismTop.glfwCursorPosCallback;
+	ddsLoadedFlag = inPrismTop.ddsLoadedFlag;
+	texture = inPrismTop.texture;
 
 	// Let passBuffersToGLM generate the vertices
 	g_vertex_buffer_data = NULL;
 	g_uv_buffer_data = NULL;
 
-	imageMovedFlag = true;
+	imageChangedFlag = true;
 	updateModelMatrixFlag = true;
 	updateMVPFlag = true;
 	timeMVPUpdated = 0;
@@ -110,14 +113,14 @@ void prismTop::updateMVP() {
 
 // Update the face image when you move it
 void prismTop::upateImage() {
-	if (!imageMovedFlag) return;
+	if (!imageChangedFlag) return;
 
 	int nCoordinates = nTriangles() * 9;
 	int size = sizeof(GLfloat)*nCoordinates;
 	fillVerticesAndUVs();
 	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, size, g_uv_buffer_data);
-	imageMovedFlag = false;
+	imageChangedFlag = false;
 }
 
 // Draw the object in the main loop
@@ -241,6 +244,29 @@ void prismTop::fillVerticesAndUVs() {
 		thisPoint = nextPoint;
 		nextPoint = matRot * thisPoint;
 	}
+
+	// DDS inverts the Y coordinates
+	if (ddsLoadedFlag) {
+		uvIdx = 1;
+		for (i = 0; i < nTriangles()*3; i++, uvIdx+=2) {
+			uvs[uvIdx] = 1.0f - uvs[uvIdx];
+		}
+	}
 }
+
+
+void prismTop::loadBMP(const char * imagepath) {
+	texture = loadBMP_custom(imagepath);
+	imageChangedFlag = true;
+	ddsLoadedFlag = false;
+}
+
+void prismTop::loadDDS(const char * imagepath) {
+	texture = ::loadDDS(imagepath);
+	imageChangedFlag = true;
+	ddsLoadedFlag = true;
+}
+
+
 
 

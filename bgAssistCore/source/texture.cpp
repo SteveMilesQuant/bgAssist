@@ -73,6 +73,7 @@ GLuint loadBMP_custom(const char * imagepath){
 	
 	// "Bind" the newly created texture : all future texture functions will modify this texture
 	glBindTexture(GL_TEXTURE_2D, textureID);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
 	// Give the image to OpenGL
 	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
