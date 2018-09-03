@@ -218,6 +218,8 @@ int main(void)
 
 	// Hex prism
 	prismTop hexPrism(6);
+	hexPrism.setMatrixId(MatrixID);
+	hexPrism.setTextureId(TextureID);
 	hexPrism.glfwCursorPosCallback = dragSelectedPrismImage;
 	hexPrism.doWhenSelected = dragPrismImageBegin;
 	hexPrism.setCamera(&Camera);
@@ -236,6 +238,8 @@ int main(void)
 
 	// Penta prism
 	prismTop pentaPrism(5);
+	pentaPrism.setMatrixId(MatrixID);
+	pentaPrism.setTextureId(TextureID);
 	pentaPrism.glfwCursorPosCallback = dragSelectedPrism;
 	pentaPrism.doWhenSelected = NULL;
 	pentaPrism.setCamera(&Camera);
@@ -256,6 +260,7 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(programID);
 
+		// Change view by pressing space bar
 		// This should really be done with a callback
 		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !viewUpdated) {
 			if (onFrontView) {
@@ -272,9 +277,10 @@ int main(void)
 			viewUpdated = false;
 		}
 
+		// Draw all prisms
 		vector<prismTop *>::iterator prismIter = allPrisms.begin();
 		for (; prismIter != allPrisms.end(); prismIter++) {
-			(*prismIter)->draw(MatrixID, TextureID);
+			(*prismIter)->draw();
 		}
 
 		glfwSwapBuffers(window);
@@ -283,7 +289,7 @@ int main(void)
 	} while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
 			glfwWindowShouldClose(window) == 0);
 
-
+	// Clean up
 	glDeleteProgram(programID);
 	glDeleteVertexArrays(1, &VertexArrayID);
 	glfwDestroyWindow(window);

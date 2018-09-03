@@ -26,7 +26,7 @@ prismTop::prismTop(int nSidesIn) {
 	maxCoords = vec3(0, 0, 1);
 	minCoords = vec3(0, 0, -1);
 	ddsLoadedFlag = false;
-	copiedTextureFlag = false;
+	copiedImageFlag = false;
 
 	g_vertex_buffer_data = NULL;
 	g_uv_buffer_data = NULL;
@@ -52,8 +52,10 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 	doWhenSelected = inPrismTop.doWhenSelected;
 	glfwCursorPosCallback = inPrismTop.glfwCursorPosCallback;
 	ddsLoadedFlag = inPrismTop.ddsLoadedFlag;
-	texture = inPrismTop.texture;
-	copiedTextureFlag = true;
+	textureId = inPrismTop.textureId;
+	mvpId = inPrismTop.mvpId;
+	faceImageId = inPrismTop.faceImageId;
+	copiedImageFlag = true;
 
 	// Let passBuffersToGLM generate the vertices
 	g_vertex_buffer_data = NULL;
@@ -71,7 +73,7 @@ prismTop::~prismTop() {
 	delete[] g_uv_buffer_data;
 	glDeleteBuffers(1, &vertexbuffer);
 	glDeleteBuffers(1, &uvbuffer);
-	if (!copiedTextureFlag) glDeleteTextures(1, &texture);
+	if (!copiedImageFlag) glDeleteTextures(1, &faceImageId);
 }
 
 // Pass the buffers to GLM only once: after you generate them
@@ -134,7 +136,7 @@ void prismTop::upateImage() {
 }
 
 // Draw the object in the main loop
-void prismTop::draw(GLuint MatrixID, GLuint TextureID) {
+void prismTop::draw() {
 	// Update the image, model matrix and MVP
 	// These routines will check if this is needed
 	upateImage();
@@ -143,12 +145,12 @@ void prismTop::draw(GLuint MatrixID, GLuint TextureID) {
 
 	// Send our transformation to the currently bound shader, 
 	// in the "MVP" uniform
-	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+	glUniformMatrix4fv(mvpId, 1, GL_FALSE, &MVP[0][0]);
 
 	// Bind our texture in Texture Unit 0
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glUniform1i(TextureID, 0);
+	glBindTexture(GL_TEXTURE_2D, faceImageId);
+	glUniform1i(textureId, 0);
 
 	// 1st attribute buffer : vertices
 	glEnableVertexAttribArray(0);
@@ -264,19 +266,20 @@ void prismTop::fillVerticesAndUVs() {
 	}
 }
 
-
+// Load bmp image
 void prismTop::loadBMP(const char * imagepath) {
-	texture = loadBMP_custom(imagepath);
+	faceImageId = loadBMP_custom(imagepath);
 	imageChangedFlag = true;
 	ddsLoadedFlag = false;
-	copiedTextureFlag = false;
+	copiedImageFlag = false;
 }
 
+// Load DDS image
 void prismTop::loadDDS(const char * imagepath) {
-	texture = ::loadDDS(imagepath);
+	faceImageId = ::loadDDS(imagepath);
 	imageChangedFlag = true;
 	ddsLoadedFlag = true;
-	copiedTextureFlag = false;
+	copiedImageFlag = false;
 }
 
 

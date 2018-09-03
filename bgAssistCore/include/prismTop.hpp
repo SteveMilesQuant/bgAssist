@@ -36,6 +36,8 @@ public:
 	void setProjection(timedMat4 *inProjection) { projection = inProjection; updateMVPFlag = true; }
 	void setUvScale(vec2 uvScaleIn) { if (uvScaleIn == uvScale) return;  uvScale = uvScaleIn; imageChangedFlag = true; }
 	void setUvCenter(vec2 uvCenterIn) { if (uvCenterIn == uvCenter) return;  uvCenter = uvCenterIn; imageChangedFlag = true; }
+	void setMatrixId(GLuint inMatrixId) { mvpId = inMatrixId; }
+	void setTextureId(GLuint inTextureId) { textureId = inTextureId; }
 	vec3 getScale() { return scaling; }
 	vec3 getTranslation() { return translation; }
 	timedMat4 & getCamera() { return *camera; }
@@ -57,7 +59,7 @@ public:
 	void upateImage();
 
 	// Draw the object; call in main loop
-	void draw(GLuint MatrixID, GLuint TextureID);
+	void draw();
 
 	// When we start dragging an image, mark its start location
 	// As we're dragging it, use the start location as a basis for moving it
@@ -84,6 +86,7 @@ private:
 	GLboolean updateModelMatrixFlag;
 	GLboolean updateMVPFlag;
 	double timeMVPUpdated;
+	GLuint mvpId; // glGetUniformLocation(programID, "MVP");
 
 	// UV (image mapping) transformation
 	vec2 uvScale;
@@ -91,7 +94,7 @@ private:
 	vec2 startUvCenter;
 	GLboolean imageChangedFlag;
 	GLboolean ddsLoadedFlag;
-	GLboolean copiedTextureFlag;
+	GLboolean copiedImageFlag;
 
 	// Vertex and uv buffers
 	GLuint vertexbuffer;
@@ -100,7 +103,8 @@ private:
 	GLfloat * g_uv_buffer_data;
 
 	// Texture ID
-	GLuint texture;
+	GLuint faceImageId; // from loading the image
+	GLuint textureId; // glGetUniformLocation(programID, "prismTopTexture");
 
 	// For OBB, the minimum and maximum coordinates
 	vec3 minCoords;
