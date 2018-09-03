@@ -2,3 +2,10 @@ https://stackoverflow.com/questions/1400654/how-do-i-put-my-opengl-app-into-full
 
 create tile class
 create token class
+create list of tokens class
+create drop down menu class
+create text box class
+find way to read typing and get fonts
+create unit test 2
+create builder world
+
