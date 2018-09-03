@@ -34,8 +34,8 @@ public:
 	void setRotation(GLfloat inRadians, vec3 inAxis) { rotationRadians = inRadians;  rotationAxis = inAxis;  updateModelMatrixFlag = true; }
 	void setCamera(timedMat4 *inCamera) { camera = inCamera; updateMVPFlag = true; }
 	void setProjection(timedMat4 *inProjection) { projection = inProjection; updateMVPFlag = true; }
-	void setUvScale(vec2 uvScaleIn) { if (uvScaleIn == uvScale) return;  uvScale = uvScaleIn; imageChangedFlag = true; }
-	void setUvCenter(vec2 uvCenterIn) { if (uvCenterIn == uvCenter) return;  uvCenter = uvCenterIn; imageChangedFlag = true; }
+	void setUvScale(vec2 uvScaleIn) { if (uvScaleIn == uvScale) return;  uvScale = uvScaleIn; faceImageChangedFlag = true; }
+	void setUvCenter(vec2 uvCenterIn) { if (uvCenterIn == uvCenter) return;  uvCenter = uvCenterIn; faceImageChangedFlag = true; }
 	void setMatrixId(GLuint inMatrixId) { mvpId = inMatrixId; }
 	void setTextureId(GLuint inTextureId) { textureId = inTextureId; }
 	vec3 getScale() { return scaling; }
@@ -49,22 +49,22 @@ public:
 	vec2 & getUvCenter() { return uvCenter; }
 
 	// Pass the buffers to GLM only once: after you generate them
-	void passBuffersToGLM(GLuint uvStaticOrDynamic);
+	void passBuffersToGLM(GLuint uvStaticOrDynamicForFaceImage);
 
 	// Image loaders (from opengl tutorial's texture and shader files)
-	void loadBMP(const char * imagepath);
-	void loadDDS(const char * imagepath);
+	void loadFaceImage(const char * imagepath, GLboolean ddsFormatFlag);
+	void loadSideImage(const char * imagepath, GLboolean ddsFormatFlag);
 
 	// Update the face image when you move it
-	void upateImage();
+	void upateFaceImage();
 
 	// Draw the object; call in main loop
 	void draw();
 
 	// When we start dragging an image, mark its start location
 	// As we're dragging it, use the start location as a basis for moving it
-	void dragImageBegin() { startUvCenter = uvCenter; }
-	void dragImage(vec2 shiftFromStart) { setUvCenter(startUvCenter+ shiftFromStart); }
+	void dragFaceImageBegin() { startUvCenter = uvCenter; }
+	void dragFaceImage(vec2 shiftFromStart) { setUvCenter(startUvCenter+ shiftFromStart); }
 
 	// Action function pointers
 	void (*glfwCursorPosCallback)(GLFWwindow* window, double x, double y);
@@ -92,18 +92,26 @@ private:
 	vec2 uvScale;
 	vec2 uvCenter;
 	vec2 startUvCenter;
-	GLboolean imageChangedFlag;
-	GLboolean ddsLoadedFlag;
-	GLboolean copiedImageFlag;
+	GLboolean faceImageChangedFlag;
+	GLboolean ddsFaceLoadedFlag;
+	GLboolean ddsSideLoadedFlag;
+	GLboolean copiedFaceImageFlag;
+	GLboolean copiedSideImageFlag;
 
 	// Vertex and uv buffers
-	GLuint vertexbuffer;
-	GLfloat * g_vertex_buffer_data;
-	GLuint uvbuffer;
-	GLfloat * g_uv_buffer_data;
+	GLuint faceVertexBufferId;
+	GLfloat * faceVertexBufferData;
+	GLuint faceUvBufferId;
+	GLfloat * faceUvBufferData;
+
+	GLuint sideVertexBufferId;
+	GLfloat * sideVertexBufferData;
+	GLuint sideUvBufferId;
+	GLfloat * sideUvBufferData;
 
 	// Texture ID
-	GLuint faceImageId; // from loading the image
+	GLuint faceImageId; // from loading the face image
+	GLuint sideImageId; // from loading the side image
 	GLuint textureId; // glGetUniformLocation(programID, "prismTopTexture");
 
 	// For OBB, the minimum and maximum coordinates
@@ -111,7 +119,7 @@ private:
 	vec3 maxCoords;
 
 	// Fill vertices and uv coords
-	void fillVerticesAndUVs();
+	void fillVerticesAndUVs(GLboolean faceOnly);
 
 	// Update the model matrix whenever you change the position of the object
 	void updateModelMatrix();
