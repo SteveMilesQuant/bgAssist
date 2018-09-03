@@ -25,16 +25,20 @@ prismTop::prismTop(int nSidesIn) {
 	uvCenter = vec2(0, 0);
 	maxCoords = vec3(0, 0, 1);
 	minCoords = vec3(0, 0, -1);
-	ddsLoadedFlag = false;
-	copiedImageFlag = false;
+	ddsFaceLoadedFlag = false;
+	ddsSideLoadedFlag = false;
+	copiedFaceImageFlag = false;
+	copiedSideImageFlag = false;
 
-	g_vertex_buffer_data = NULL;
-	g_uv_buffer_data = NULL;
+	faceVertexBufferData = NULL;
+	faceUvBufferData = NULL;
+	sideVertexBufferData = NULL;
+	sideUvBufferData = NULL;
 
 	doWhenSelected = NULL;
 	glfwCursorPosCallback = NULL;
 
-	imageChangedFlag = true;
+	faceImageChangedFlag = true;
 	updateModelMatrixFlag = true;
 	updateMVPFlag = true;
 	timeMVPUpdated = 0;
@@ -51,17 +55,22 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 	maxCoords = inPrismTop.maxCoords;
 	doWhenSelected = inPrismTop.doWhenSelected;
 	glfwCursorPosCallback = inPrismTop.glfwCursorPosCallback;
-	ddsLoadedFlag = inPrismTop.ddsLoadedFlag;
+	ddsFaceLoadedFlag = inPrismTop.ddsFaceLoadedFlag;
+	ddsSideLoadedFlag = inPrismTop.ddsSideLoadedFlag;
 	textureId = inPrismTop.textureId;
 	mvpId = inPrismTop.mvpId;
 	faceImageId = inPrismTop.faceImageId;
-	copiedImageFlag = true;
+	copiedFaceImageFlag = true;
+	sideImageId = inPrismTop.sideImageId;
+	copiedSideImageFlag = true;
 
 	// Let passBuffersToGLM generate the vertices
-	g_vertex_buffer_data = NULL;
-	g_uv_buffer_data = NULL;
+	faceVertexBufferData = NULL;
+	faceUvBufferData = NULL;
+	sideVertexBufferData = NULL;
+	sideUvBufferData = NULL;
 
-	imageChangedFlag = true;
+	faceImageChangedFlag = true;
 	updateModelMatrixFlag = true;
 	updateMVPFlag = true;
 	timeMVPUpdated = 0;
@@ -69,28 +78,48 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 
 // Desctuctor
 prismTop::~prismTop() {
-	delete[] g_vertex_buffer_data;
-	delete[] g_uv_buffer_data;
-	glDeleteBuffers(1, &vertexbuffer);
-	glDeleteBuffers(1, &uvbuffer);
-	if (!copiedImageFlag) glDeleteTextures(1, &faceImageId);
+	delete[] faceVertexBufferData;
+	delete[] faceUvBufferData;
+	glDeleteBuffers(1, &faceVertexBufferId);
+	glDeleteBuffers(1, &faceUvBufferId);
+	if (!copiedFaceImageFlag) glDeleteTextures(1, &faceImageId);
+
+	delete[] sideVertexBufferData;
+	delete[] sideUvBufferData;
+	glDeleteBuffers(1, &sideVertexBufferId);
+	glDeleteBuffers(1, &sideUvBufferId);
+	if (!copiedSideImageFlag) glDeleteTextures(1, &sideImageId);
 }
 
 // Pass the buffers to GLM only once: after you generate them
 // uvStaticOrDynamic should be GL_DYNAMIC_DRAW if you wish to update
 //    the image on the face of the prism, or GL_STATIC_DRAW otherwise.
-void prismTop::passBuffersToGLM(GLuint uvStaticOrDynamic) {
-	int nCoordinates = nTriangles() * 9;
-	int size = sizeof(GLfloat)*nCoordinates;
-	g_vertex_buffer_data = new GLfloat[nCoordinates * 3];
-	g_uv_buffer_data = new GLfloat[nCoordinates * 2];
-	fillVerticesAndUVs();
-	glGenBuffers(1, &vertexbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-	glBufferData(GL_ARRAY_BUFFER, size, g_vertex_buffer_data, GL_STATIC_DRAW);
-	glGenBuffers(1, &uvbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-	glBufferData(GL_ARRAY_BUFFER, size, g_uv_buffer_data, uvStaticOrDynamic);
+void prismTop::passBuffersToGLM(GLuint uvStaticOrDynamicForFaceImage) {
+	int nFaceCoordinates = nSides * 9;
+	int faceSize = sizeof(GLfloat)*nFaceCoordinates;
+	faceVertexBufferData = new GLfloat[nFaceCoordinates * 3];
+	faceUvBufferData = new GLfloat[nFaceCoordinates * 2];
+
+	int nSideCoordinates = nSides * 18;
+	int sideSize = sizeof(GLfloat)*nSideCoordinates;
+	sideVertexBufferData = new GLfloat[nSideCoordinates * 3];
+	sideUvBufferData = new GLfloat[nSideCoordinates * 2];
+	
+	fillVerticesAndUVs(false);
+
+	glGenBuffers(1, &faceVertexBufferId);
+	glBindBuffer(GL_ARRAY_BUFFER, faceVertexBufferId);
+	glBufferData(GL_ARRAY_BUFFER, faceSize, faceVertexBufferData, GL_STATIC_DRAW);
+	glGenBuffers(1, &faceUvBufferId);
+	glBindBuffer(GL_ARRAY_BUFFER, faceUvBufferId);
+	glBufferData(GL_ARRAY_BUFFER, faceSize, faceUvBufferData, uvStaticOrDynamicForFaceImage);
+
+	glGenBuffers(1, &sideVertexBufferId);
+	glBindBuffer(GL_ARRAY_BUFFER, sideVertexBufferId);
+	glBufferData(GL_ARRAY_BUFFER, sideSize, sideVertexBufferData, GL_STATIC_DRAW);
+	glGenBuffers(1, &sideUvBufferId);
+	glBindBuffer(GL_ARRAY_BUFFER, sideUvBufferId);
+	glBufferData(GL_ARRAY_BUFFER, sideSize, sideUvBufferData, GL_STATIC_DRAW);
 }
 
 
@@ -124,22 +153,22 @@ void prismTop::updateMVP() {
 }
 
 // Update the face image when you move it
-void prismTop::upateImage() {
-	if (!imageChangedFlag) return;
+void prismTop::upateFaceImage() {
+	if (!faceImageChangedFlag) return;
 
-	int nCoordinates = nTriangles() * 9;
+	int nCoordinates = nSides * 9;
 	int size = sizeof(GLfloat)*nCoordinates;
-	fillVerticesAndUVs();
-	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, size, g_uv_buffer_data);
-	imageChangedFlag = false;
+	fillVerticesAndUVs(true);
+	glBindBuffer(GL_ARRAY_BUFFER, faceUvBufferId);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, size, faceUvBufferData);
+	faceImageChangedFlag = false;
 }
 
 // Draw the object in the main loop
 void prismTop::draw() {
 	// Update the image, model matrix and MVP
 	// These routines will check if this is needed
-	upateImage();
+	upateFaceImage();
 	updateModelMatrix();
 	updateMVP();
 
@@ -147,6 +176,8 @@ void prismTop::draw() {
 	// in the "MVP" uniform
 	glUniformMatrix4fv(mvpId, 1, GL_FALSE, &MVP[0][0]);
 
+
+	// DRAW FACE
 	// Bind our texture in Texture Unit 0
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, faceImageId);
@@ -154,7 +185,7 @@ void prismTop::draw() {
 
 	// 1st attribute buffer : vertices
 	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, faceVertexBufferId);
 	glVertexAttribPointer(
 		0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
 		3,                  // 3 dimensions of space
@@ -166,7 +197,7 @@ void prismTop::draw() {
 
 	// 2nd attribute buffer : texture
 	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, faceUvBufferId);
 	glVertexAttribPointer(
 		1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
 		2,                                // size
@@ -177,16 +208,52 @@ void prismTop::draw() {
 	);
 
 	// Draw our object(s)
-	glDrawArrays(GL_TRIANGLES, 0, nTriangles() * 3);
+	glDrawArrays(GL_TRIANGLES, 0, nSides * 3);
+	glDisableVertexAttribArray(0);
+
+	// DRAW SIDES
+	// Bind our texture in Texture Unit 0
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, sideImageId);
+	glUniform1i(textureId, 0);
+
+	// 1st attribute buffer : vertices
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, sideVertexBufferId);
+	glVertexAttribPointer(
+		0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+		3,                  // 3 dimensions of space
+		GL_FLOAT,           // type
+		GL_FALSE,           // normalized?
+		0,                  // stride
+		(void*)0            // array buffer offset
+	);
+
+	// 2nd attribute buffer : texture
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, sideUvBufferId);
+	glVertexAttribPointer(
+		1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
+		2,                                // size
+		GL_FLOAT,                         // type
+		GL_FALSE,                         // normalized?
+		0,                                // stride
+		(void*)0                          // array buffer offset
+	);
+
+	// Draw our object(s)
+	glDrawArrays(GL_TRIANGLES, 0, nSides * 6);
 	glDisableVertexAttribArray(0);
 }
 
 
 // Fill the vertices and UV
-void prismTop::fillVerticesAndUVs() {
-	GLfloat * vertices = g_vertex_buffer_data;
-	GLfloat * uvs = g_uv_buffer_data;
-	int i, j, vertexIdx = 0, uvIdx = 0;
+void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
+	GLfloat * vertices = faceVertexBufferData;
+	GLfloat * uvs = faceUvBufferData;
+	GLfloat * vertices2 = sideVertexBufferData;
+	GLfloat * uvs2 = sideUvBufferData;
+	int i, j, vertexIdx = 0, uvIdx = 0, v2Idx = 0, uv2Idx = 0;
 	vec3 v3RotAxis(0.0f, 0.0f, 1.0f); // Rotate about z+
 	mat4x4 matRot = rotate(2.0f * pi<float>() / nSides, v3RotAxis);
 	vec4 startPoint = rotate(pi<float>() / nSides, v3RotAxis) * vec4(1, 0, 0, 0);
@@ -221,36 +288,47 @@ void prismTop::fillVerticesAndUVs() {
 		uvs[uvIdx++] = vertices[vertexIdx++] * uvScale[1] + uvCenter[1];
 		vertices[vertexIdx++] = 1.0f;
 
-		// Sides will have a single color using the picture
-		for (j = 0; j < 12; j++) {
-			uvs[uvIdx++] = 0.0f;
+		// Sometimes we only update the face
+		if (!faceOnly) {
+
+			// First half of side
+			vertices2[v2Idx++] = thisPoint[0];
+			vertices2[v2Idx++] = thisPoint[1];
+			vertices2[v2Idx++] = 1.0f;
+			uvs2[uv2Idx++] = 1.0f;
+			uvs2[uv2Idx++] = 1.0f;
+
+			vertices2[v2Idx++] = thisPoint[0];
+			vertices2[v2Idx++] = thisPoint[1];
+			vertices2[v2Idx++] = -1.0f;
+			uvs2[uv2Idx++] = 1.0f;
+			uvs2[uv2Idx++] = 0.0f;
+
+			vertices2[v2Idx++] = nextPoint[0];
+			vertices2[v2Idx++] = nextPoint[1];
+			vertices2[v2Idx++] = 1.0f;
+			uvs2[uv2Idx++] = 0.0f;
+			uvs2[uv2Idx++] = 1.0f;
+
+			// Second half of side
+			vertices2[v2Idx++] = nextPoint[0];
+			vertices2[v2Idx++] = nextPoint[1];
+			vertices2[v2Idx++] = 1.0f;
+			uvs2[uv2Idx++] = 0.0f;
+			uvs2[uv2Idx++] = 1.0f;
+
+			vertices2[v2Idx++] = nextPoint[0];
+			vertices2[v2Idx++] = nextPoint[1];
+			vertices2[v2Idx++] = -1.0f;
+			uvs2[uv2Idx++] = 0.0f;
+			uvs2[uv2Idx++] = 0.0f;
+
+			vertices2[v2Idx++] = thisPoint[0];
+			vertices2[v2Idx++] = thisPoint[1];
+			vertices2[v2Idx++] = -1.0f;
+			uvs2[uv2Idx++] = 1.0f;
+			uvs2[uv2Idx++] = 0.0f;
 		}
-
-		// First half of side
-		vertices[vertexIdx++] = thisPoint[0];
-		vertices[vertexIdx++] = thisPoint[1];
-		vertices[vertexIdx++] = 1.0f;
-
-		vertices[vertexIdx++] = thisPoint[0];
-		vertices[vertexIdx++] = thisPoint[1];
-		vertices[vertexIdx++] = -1.0f;
-
-		vertices[vertexIdx++] = nextPoint[0];
-		vertices[vertexIdx++] = nextPoint[1];
-		vertices[vertexIdx++] = 1.0f;
-
-		// Second half of side
-		vertices[vertexIdx++] = nextPoint[0];
-		vertices[vertexIdx++] = nextPoint[1];
-		vertices[vertexIdx++] = 1.0f;
-
-		vertices[vertexIdx++] = nextPoint[0];
-		vertices[vertexIdx++] = nextPoint[1];
-		vertices[vertexIdx++] = -1.0f;
-
-		vertices[vertexIdx++] = thisPoint[0];
-		vertices[vertexIdx++] = thisPoint[1];
-		vertices[vertexIdx++] = -1.0f;
 
 		// Move to next set
 		thisPoint = nextPoint;
@@ -258,30 +336,36 @@ void prismTop::fillVerticesAndUVs() {
 	}
 
 	// DDS inverts the Y coordinates
-	if (ddsLoadedFlag) {
+	if (ddsFaceLoadedFlag) {
 		uvIdx = 1;
-		for (i = 0; i < nTriangles()*3; i++, uvIdx+=2) {
+		for (i = 0; i < nSides*3; i++, uvIdx+=2) {
 			uvs[uvIdx] = 1.0f - uvs[uvIdx];
+		}
+	}
+	if (ddsSideLoadedFlag) {
+		uv2Idx = 1;
+		for (i = 0; i < nSides * 6; i++, uv2Idx += 2) {
+			uvs2[uv2Idx] = 1.0f - uvs2[uv2Idx];
 		}
 	}
 }
 
-// Load bmp image
-void prismTop::loadBMP(const char * imagepath) {
-	faceImageId = loadBMP_custom(imagepath);
-	imageChangedFlag = true;
-	ddsLoadedFlag = false;
-	copiedImageFlag = false;
+// Load face image, either from a bmp or a dds
+void prismTop::loadFaceImage(const char * imagepath, GLboolean ddsFormatFlag) {
+	ddsFaceLoadedFlag = ddsFormatFlag;
+	if (ddsFormatFlag) faceImageId = ::loadDDS(imagepath);
+	else faceImageId = loadBMP_custom(imagepath);
+	copiedFaceImageFlag = false;
 }
 
-// Load DDS image
-void prismTop::loadDDS(const char * imagepath) {
-	faceImageId = ::loadDDS(imagepath);
-	imageChangedFlag = true;
-	ddsLoadedFlag = true;
-	copiedImageFlag = false;
-}
 
+// Load side image, either from a bmp or a dds
+void prismTop::loadSideImage(const char * imagepath, GLboolean ddsFormatFlag) {
+	ddsSideLoadedFlag = ddsFormatFlag;
+	if (ddsFormatFlag) sideImageId = ::loadDDS(imagepath);
+	else sideImageId = loadBMP_custom(imagepath);
+	copiedSideImageFlag = false;
+}
 
 
 
