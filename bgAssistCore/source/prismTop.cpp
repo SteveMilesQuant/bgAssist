@@ -30,10 +30,10 @@ prismTop::prismTop(int nSidesIn) {
 	copiedFaceImageFlag = false;
 	copiedSideImageFlag = false;
 
-	faceVertexBufferData = NULL;
-	faceUvBufferData = NULL;
-	sideVertexBufferData = NULL;
-	sideUvBufferData = NULL;
+	faceVertexBufferData.clear();
+	faceUvBufferData.clear();
+	sideVertexBufferData.clear();
+	sideUvBufferData.clear();
 
 	doWhenSelected = NULL;
 	glfwCursorPosCallback = NULL;
@@ -65,10 +65,10 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 	copiedSideImageFlag = true;
 
 	// Let passBuffersToGLM generate the vertices
-	faceVertexBufferData = NULL;
-	faceUvBufferData = NULL;
-	sideVertexBufferData = NULL;
-	sideUvBufferData = NULL;
+	faceVertexBufferData.clear();
+	faceUvBufferData.clear();
+	sideVertexBufferData.clear();
+	sideUvBufferData.clear();
 
 	faceImageChangedFlag = true;
 	updateModelMatrixFlag = true;
@@ -78,14 +78,10 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 
 // Desctuctor
 prismTop::~prismTop() {
-	delete[] faceVertexBufferData;
-	delete[] faceUvBufferData;
 	glDeleteBuffers(1, &faceVertexBufferId);
 	glDeleteBuffers(1, &faceUvBufferId);
 	if (!copiedFaceImageFlag) glDeleteTextures(1, &faceImageId);
 
-	delete[] sideVertexBufferData;
-	delete[] sideUvBufferData;
 	glDeleteBuffers(1, &sideVertexBufferId);
 	glDeleteBuffers(1, &sideUvBufferId);
 	if (!copiedSideImageFlag) glDeleteTextures(1, &sideImageId);
@@ -95,31 +91,29 @@ prismTop::~prismTop() {
 // uvStaticOrDynamic should be GL_DYNAMIC_DRAW if you wish to update
 //    the image on the face of the prism, or GL_STATIC_DRAW otherwise.
 void prismTop::passBuffersToGLM(GLuint uvStaticOrDynamicForFaceImage) {
-	int nFaceCoordinates = nSides * 9;
-	int faceSize = sizeof(GLfloat)*nFaceCoordinates;
-	faceVertexBufferData = new GLfloat[nFaceCoordinates * 3];
-	faceUvBufferData = new GLfloat[nFaceCoordinates * 2];
+	int nFaceCoordinates = nSides * 3;
+	faceVertexBufferData.reserve(nFaceCoordinates);
+	faceUvBufferData.reserve(nFaceCoordinates);
 
-	int nSideCoordinates = nSides * 18;
-	int sideSize = sizeof(GLfloat)*nSideCoordinates;
-	sideVertexBufferData = new GLfloat[nSideCoordinates * 3];
-	sideUvBufferData = new GLfloat[nSideCoordinates * 2];
+	int nSideCoordinates = nSides * 6;
+	sideVertexBufferData.reserve(nSideCoordinates);
+	sideUvBufferData.reserve(nSideCoordinates);
 	
 	fillVerticesAndUVs(false);
 
 	glGenBuffers(1, &faceVertexBufferId);
 	glBindBuffer(GL_ARRAY_BUFFER, faceVertexBufferId);
-	glBufferData(GL_ARRAY_BUFFER, faceSize, faceVertexBufferData, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, faceVertexBufferData.size() * sizeof(vec3), &faceVertexBufferData[0], GL_STATIC_DRAW);
 	glGenBuffers(1, &faceUvBufferId);
 	glBindBuffer(GL_ARRAY_BUFFER, faceUvBufferId);
-	glBufferData(GL_ARRAY_BUFFER, faceSize, faceUvBufferData, uvStaticOrDynamicForFaceImage);
+	glBufferData(GL_ARRAY_BUFFER, faceUvBufferData.size() * sizeof(vec2), &faceUvBufferData[0], uvStaticOrDynamicForFaceImage);
 
 	glGenBuffers(1, &sideVertexBufferId);
 	glBindBuffer(GL_ARRAY_BUFFER, sideVertexBufferId);
-	glBufferData(GL_ARRAY_BUFFER, sideSize, sideVertexBufferData, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sideVertexBufferData.size() * sizeof(vec3), &sideVertexBufferData[0], GL_STATIC_DRAW);
 	glGenBuffers(1, &sideUvBufferId);
 	glBindBuffer(GL_ARRAY_BUFFER, sideUvBufferId);
-	glBufferData(GL_ARRAY_BUFFER, sideSize, sideUvBufferData, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sideUvBufferData.size() * sizeof(vec2), &sideUvBufferData[0], GL_STATIC_DRAW);
 }
 
 
@@ -157,10 +151,9 @@ void prismTop::upateFaceImage() {
 	if (!faceImageChangedFlag) return;
 
 	int nCoordinates = nSides * 9;
-	int size = sizeof(GLfloat)*nCoordinates;
 	fillVerticesAndUVs(true);
 	glBindBuffer(GL_ARRAY_BUFFER, faceUvBufferId);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, size, faceUvBufferData);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, faceUvBufferData.size() * sizeof(vec2), &faceUvBufferData[0]);
 	faceImageChangedFlag = false;
 }
 
@@ -249,17 +242,22 @@ void prismTop::draw() {
 
 // Fill the vertices and UV
 void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
-	GLfloat * vertices = faceVertexBufferData;
-	GLfloat * uvs = faceUvBufferData;
-	GLfloat * vertices2 = sideVertexBufferData;
-	GLfloat * uvs2 = sideUvBufferData;
-	int i, j, vertexIdx = 0, uvIdx = 0, v2Idx = 0, uv2Idx = 0;
+	int i;
+	vec3 faceCenter(0.0f, 0.0f, 1.0f);
 	vec3 v3RotAxis(0.0f, 0.0f, 1.0f); // Rotate about z+
 	mat4x4 matRot = rotate(2.0f * pi<float>() / nSides, v3RotAxis);
 	vec4 startPoint = rotate(pi<float>() / nSides, v3RotAxis) * vec4(1, 0, 0, 0);
 	vec4 thisPoint = startPoint;
 	vec4 nextPoint = matRot * thisPoint;
 
+	// Clear the data
+	faceVertexBufferData.clear();
+	faceUvBufferData.clear();
+	if (!faceOnly) {
+		sideVertexBufferData.clear();
+		sideUvBufferData.clear();
+	}
+	
 	for (i = 0; i < nSides; i++) {
 		if (i == nSides - 1) nextPoint = startPoint;
 
@@ -270,64 +268,32 @@ void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
 		maxCoords[1] = max(maxCoords[1], thisPoint[1]);
 
 		// Front triangle
-		vertices[vertexIdx] = 0.0f;
-		uvs[uvIdx++] = vertices[vertexIdx++] * uvScale[0] + uvCenter[0];
-		vertices[vertexIdx] = 0.0f;
-		uvs[uvIdx++] = vertices[vertexIdx++] * uvScale[1] + uvCenter[1];
-		vertices[vertexIdx++] = 1.0f;
-
-		vertices[vertexIdx] = thisPoint[0];
-		uvs[uvIdx++] = vertices[vertexIdx++] * uvScale[0] + uvCenter[0];
-		vertices[vertexIdx] = thisPoint[1];
-		uvs[uvIdx++] = vertices[vertexIdx++] * uvScale[1] + uvCenter[1];
-		vertices[vertexIdx++] = 1.0f;
-
-		vertices[vertexIdx] = nextPoint[0];
-		uvs[uvIdx++] = vertices[vertexIdx++] * uvScale[0] + uvCenter[0];
-		vertices[vertexIdx] = nextPoint[1];
-		uvs[uvIdx++] = vertices[vertexIdx++] * uvScale[1] + uvCenter[1];
-		vertices[vertexIdx++] = 1.0f;
-
+		faceVertexBufferData.push_back(faceCenter);
+		faceVertexBufferData.push_back(vec3(thisPoint.x, thisPoint.y, 1));
+		faceVertexBufferData.push_back(vec3(nextPoint.x, nextPoint.y, 1));
+		faceUvBufferData.push_back(uvCenter);
+		faceUvBufferData.push_back(vec2(thisPoint.x*uvScale.x, thisPoint.y*uvScale.x) + uvCenter);
+		faceUvBufferData.push_back(vec2(nextPoint.x*uvScale.x, nextPoint.y*uvScale.x) + uvCenter);
+		
 		// Sometimes we only update the face
 		if (!faceOnly) {
 
 			// First half of side
-			vertices2[v2Idx++] = thisPoint[0];
-			vertices2[v2Idx++] = thisPoint[1];
-			vertices2[v2Idx++] = 1.0f;
-			uvs2[uv2Idx++] = 1.0f;
-			uvs2[uv2Idx++] = 1.0f;
-
-			vertices2[v2Idx++] = thisPoint[0];
-			vertices2[v2Idx++] = thisPoint[1];
-			vertices2[v2Idx++] = -1.0f;
-			uvs2[uv2Idx++] = 1.0f;
-			uvs2[uv2Idx++] = 0.0f;
-
-			vertices2[v2Idx++] = nextPoint[0];
-			vertices2[v2Idx++] = nextPoint[1];
-			vertices2[v2Idx++] = 1.0f;
-			uvs2[uv2Idx++] = 0.0f;
-			uvs2[uv2Idx++] = 1.0f;
+			sideVertexBufferData.push_back(vec3(thisPoint.x, thisPoint.y, 1));
+			sideUvBufferData.push_back(vec2(1, 1));
+			sideVertexBufferData.push_back(vec3(thisPoint.x, thisPoint.y, -1));
+			sideUvBufferData.push_back(vec2(1, 0));
+			sideVertexBufferData.push_back(vec3(nextPoint.x, nextPoint.y, 1));
+			sideUvBufferData.push_back(vec2(0, 1));
 
 			// Second half of side
-			vertices2[v2Idx++] = nextPoint[0];
-			vertices2[v2Idx++] = nextPoint[1];
-			vertices2[v2Idx++] = 1.0f;
-			uvs2[uv2Idx++] = 0.0f;
-			uvs2[uv2Idx++] = 1.0f;
+			sideVertexBufferData.push_back(vec3(nextPoint.x, nextPoint.y, 1));
+			sideUvBufferData.push_back(vec2(0, 1));
+			sideVertexBufferData.push_back(vec3(nextPoint.x, nextPoint.y, -1));
+			sideUvBufferData.push_back(vec2(0, 0));
+			sideVertexBufferData.push_back(vec3(thisPoint.x, thisPoint.y, -1));
+			sideUvBufferData.push_back(vec2(1, 0));
 
-			vertices2[v2Idx++] = nextPoint[0];
-			vertices2[v2Idx++] = nextPoint[1];
-			vertices2[v2Idx++] = -1.0f;
-			uvs2[uv2Idx++] = 0.0f;
-			uvs2[uv2Idx++] = 0.0f;
-
-			vertices2[v2Idx++] = thisPoint[0];
-			vertices2[v2Idx++] = thisPoint[1];
-			vertices2[v2Idx++] = -1.0f;
-			uvs2[uv2Idx++] = 1.0f;
-			uvs2[uv2Idx++] = 0.0f;
 		}
 
 		// Move to next set
@@ -337,15 +303,13 @@ void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
 
 	// DDS inverts the Y coordinates
 	if (ddsFaceLoadedFlag) {
-		uvIdx = 1;
-		for (i = 0; i < nSides*3; i++, uvIdx+=2) {
-			uvs[uvIdx] = 1.0f - uvs[uvIdx];
+		for (i = 0; i < nSides*3; i++) {
+			faceUvBufferData[i].y = 1.0f - faceUvBufferData[i].y;
 		}
 	}
-	if (ddsSideLoadedFlag) {
-		uv2Idx = 1;
-		for (i = 0; i < nSides * 6; i++, uv2Idx += 2) {
-			uvs2[uv2Idx] = 1.0f - uvs2[uv2Idx];
+	if (ddsSideLoadedFlag && !faceOnly) {
+		for (i = 0; i < nSides * 6; i++) {
+			sideUvBufferData[i].y = 1.0f - sideUvBufferData[i].y;
 		}
 	}
 }
