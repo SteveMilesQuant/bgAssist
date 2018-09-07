@@ -4,8 +4,10 @@
 #define PRISMTOP_HPP
 
 #include <texture.hpp>
-
 #include <glfwExt.hpp>
+
+#include <vector>
+using namespace std;
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -100,14 +102,14 @@ private:
 
 	// Vertex and uv buffers
 	GLuint faceVertexBufferId;
-	GLfloat * faceVertexBufferData;
+	vector<vec3> faceVertexBufferData;
 	GLuint faceUvBufferId;
-	GLfloat * faceUvBufferData;
+	vector<vec2> faceUvBufferData;
 
 	GLuint sideVertexBufferId;
-	GLfloat * sideVertexBufferData;
+	vector<vec3> sideVertexBufferData;
 	GLuint sideUvBufferId;
-	GLfloat * sideUvBufferData;
+	vector<vec2> sideUvBufferData;
 
 	// Texture ID
 	GLuint faceImageId; // from loading the face image
