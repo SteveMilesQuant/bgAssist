@@ -159,7 +159,6 @@ int main(void)
 	GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
 	const GLFWvidmode* mode = glfwGetVideoMode(primaryMonitor);
 	//GLFWwindow* window = glfwCreateWindow(mode->width, mode->height, "Playground", primaryMonitor, NULL);
-
 	GLFWwindow* window = glfwCreateWindow(mode->width, mode->height, "Playground", NULL, NULL);
 	if (window == NULL) {
 		fprintf(stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
@@ -189,6 +188,10 @@ int main(void)
 	// Set callbacks
 	glfwSetMouseButtonCallback(window, clickAction);
 	glfwSetCursorPosCallback(window, dragAction);
+
+	// Initialize flags
+	GLboolean fullscreenFlag = false;
+	GLboolean screenUpdatedFlag = false;
 
 	// Load shaders
 	string shaderPath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/shaders/";
@@ -279,6 +282,22 @@ int main(void)
 		}
 		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) {
 			viewUpdated = false;
+		}
+
+		// Change between fullscreen and windowed with 'f'
+		if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+			if (fullscreenFlag) {
+				glfwSetWindowMonitor(window, NULL, 0, 0, 1024, 768, mode->refreshRate);
+				fullscreenFlag = false;
+			}
+			else {
+				glfwSetWindowMonitor(window, primaryMonitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+				fullscreenFlag = true;
+			}
+			screenUpdatedFlag = true;
+		}
+		if (glfwGetKey(window, GLFW_KEY_F) == GLFW_RELEASE) {
+			screenUpdatedFlag = false;
 		}
 
 		// Draw all prisms
