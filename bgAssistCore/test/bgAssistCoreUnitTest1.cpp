@@ -287,7 +287,7 @@ int main(void)
 		// Change between fullscreen and windowed with 'f'
 		if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
 			if (fullscreenFlag) {
-				glfwSetWindowMonitor(window, NULL, 0, 0, 1024, 768, mode->refreshRate);
+				glfwSetWindowMonitor(window, NULL, 0, 0, mode->width, mode->height, mode->refreshRate);
 				fullscreenFlag = false;
 			}
 			else {
