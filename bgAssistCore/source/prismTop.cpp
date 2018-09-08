@@ -246,7 +246,7 @@ void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
 	vec3 faceCenter(0.0f, 0.0f, 1.0f);
 	vec3 v3RotAxis(0.0f, 0.0f, 1.0f); // Rotate about z+
 	mat4x4 matRot = rotate(2.0f * pi<float>() / nSides, v3RotAxis);
-	vec4 startPoint = rotate(pi<float>() / nSides, v3RotAxis) * vec4(1, 0, 0, 0);
+	vec4 startPoint = rotate(pi<float>() / nSides, v3RotAxis) * vec4(1, 0, 1, 0);
 	vec4 thisPoint = startPoint;
 	vec4 nextPoint = matRot * thisPoint;
 
@@ -262,15 +262,15 @@ void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
 		if (i == nSides - 1) nextPoint = startPoint;
 
 		// Update OBB (min and max coordinates used for picking and collision)
-		minCoords[0] = min(minCoords[0], thisPoint[0]);
-		minCoords[1] = min(minCoords[1], thisPoint[1]);
-		maxCoords[0] = max(maxCoords[0], thisPoint[0]);
-		maxCoords[1] = max(maxCoords[1], thisPoint[1]);
+		minCoords.x = min(minCoords.x, thisPoint.x);
+		minCoords.y = min(minCoords.y, thisPoint.y);
+		maxCoords.x = max(maxCoords.x, thisPoint.x);
+		maxCoords.y = max(maxCoords.y, thisPoint.y);
 
 		// Front triangle
 		faceVertexBufferData.push_back(faceCenter);
-		faceVertexBufferData.push_back(vec3(thisPoint.x, thisPoint.y, 1));
-		faceVertexBufferData.push_back(vec3(nextPoint.x, nextPoint.y, 1));
+		faceVertexBufferData.push_back(vec3(thisPoint));
+		faceVertexBufferData.push_back(vec3(nextPoint));
 		faceUvBufferData.push_back(uvCenter);
 		faceUvBufferData.push_back(vec2(thisPoint.x*uvScale.x, thisPoint.y*uvScale.x) + uvCenter);
 		faceUvBufferData.push_back(vec2(nextPoint.x*uvScale.x, nextPoint.y*uvScale.x) + uvCenter);
@@ -279,15 +279,15 @@ void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
 		if (!faceOnly) {
 
 			// First half of side
-			sideVertexBufferData.push_back(vec3(thisPoint.x, thisPoint.y, 1));
+			sideVertexBufferData.push_back(vec3(thisPoint));
 			sideUvBufferData.push_back(vec2(1, 1));
 			sideVertexBufferData.push_back(vec3(thisPoint.x, thisPoint.y, -1));
 			sideUvBufferData.push_back(vec2(1, 0));
-			sideVertexBufferData.push_back(vec3(nextPoint.x, nextPoint.y, 1));
+			sideVertexBufferData.push_back(vec3(nextPoint));
 			sideUvBufferData.push_back(vec2(0, 1));
 
 			// Second half of side
-			sideVertexBufferData.push_back(vec3(nextPoint.x, nextPoint.y, 1));
+			sideVertexBufferData.push_back(vec3(nextPoint));
 			sideUvBufferData.push_back(vec2(0, 1));
 			sideVertexBufferData.push_back(vec3(nextPoint.x, nextPoint.y, -1));
 			sideUvBufferData.push_back(vec2(0, 0));
