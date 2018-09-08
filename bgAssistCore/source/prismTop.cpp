@@ -13,6 +13,7 @@ using namespace std;
 using namespace glm;
 
 // Constructor
+prismTop::prismTop() { prismTop(3); }
 prismTop::prismTop(int nSidesIn) {
 	nSides = (nSidesIn > 2) ? nSidesIn : 3;
 
@@ -279,8 +280,8 @@ void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
 		faceVertexBufferData.push_back(vec3(thisPoint));
 		faceVertexBufferData.push_back(vec3(nextPoint));
 		faceUvBufferData.push_back(uvCenter);
-		faceUvBufferData.push_back(vec2(thisPoint.x*uvScale.x, thisPoint.y*uvScale.x) + uvCenter);
-		faceUvBufferData.push_back(vec2(nextPoint.x*uvScale.x, nextPoint.y*uvScale.x) + uvCenter);
+		faceUvBufferData.push_back(vec2(thisPoint.x*uvScale.x, thisPoint.y*uvScale.y) + uvCenter);
+		faceUvBufferData.push_back(vec2(nextPoint.x*uvScale.x, nextPoint.y*uvScale.y) + uvCenter);
 		
 		// Sometimes we only update the face
 		if (!faceOnly) {

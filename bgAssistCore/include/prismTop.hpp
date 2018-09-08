@@ -20,6 +20,7 @@ public:
 
 	// Constructor: number of sides are fixed, so we always want to know how many up-front
 	prismTop(int nSidesIn);
+	prismTop(); // just to have it
 
 	// Desctructor
 	~prismTop();
