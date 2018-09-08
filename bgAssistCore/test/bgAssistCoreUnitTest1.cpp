@@ -58,8 +58,8 @@ static prismTop * findSelectedPrism(GLFWwindow* window) {
 }
 
 
-void dragPrismImageBegin(prismTop * thisPrism) {
-	if (thisPrism) thisPrism->dragFaceImageBegin();
+void dragPrismImageBegin(GLFWwindow* window, int button, int action, int mods) {
+	if (selectedPrism) selectedPrism->dragFaceImageBegin();
 }
 
 static void dragSelectedPrismImage(GLFWwindow* window, double x, double y)
@@ -113,8 +113,8 @@ static void clickAction(GLFWwindow* window, int button, int action, int mods)
 			selectedPrism = findSelectedPrism(window);
 
 			if (selectedPrism) {
-				if (selectedPrism->doWhenSelected) {
-					selectedPrism->doWhenSelected(selectedPrism);
+				if (selectedPrism->glfwMouseButtonCallback) {
+					selectedPrism->glfwMouseButtonCallback(window, button, action, mods);
 				}
 			}
 			else {
@@ -225,7 +225,7 @@ int main(void)
 	hexPrism.setMatrixId(MatrixID);
 	hexPrism.setTextureId(TextureID);
 	hexPrism.glfwCursorPosCallback = dragSelectedPrismImage;
-	hexPrism.doWhenSelected = dragPrismImageBegin;
+	hexPrism.glfwMouseButtonCallback = dragPrismImageBegin;
 	hexPrism.setCamera(&Camera);
 	hexPrism.setProjection(&Projection);
 	hexPrism.setScale(vec3(1.0f, 1.0f, 1.0f / 10.0f));
@@ -247,7 +247,7 @@ int main(void)
 	pentaPrism.setMatrixId(MatrixID);
 	pentaPrism.setTextureId(TextureID);
 	pentaPrism.glfwCursorPosCallback = dragSelectedPrism;
-	pentaPrism.doWhenSelected = NULL;
+	pentaPrism.glfwMouseButtonCallback = NULL;
 	pentaPrism.setCamera(&Camera);
 	pentaPrism.setProjection(&Projection);
 	pentaPrism.setScale(vec3(1.0f, 1.0f, 1.0f / 4.0f));

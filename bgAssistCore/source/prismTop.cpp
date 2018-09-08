@@ -35,7 +35,7 @@ prismTop::prismTop(int nSidesIn) {
 	sideVertexBufferData.clear();
 	sideUvBufferData.clear();
 
-	doWhenSelected = NULL;
+	glfwMouseButtonCallback = NULL;
 	glfwCursorPosCallback = NULL;
 
 	faceImageChangedFlag = true;
@@ -53,7 +53,7 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 	rotationAxis = inPrismTop.rotationAxis;
 	minCoords = inPrismTop.minCoords;
 	maxCoords = inPrismTop.maxCoords;
-	doWhenSelected = inPrismTop.doWhenSelected;
+	glfwMouseButtonCallback = inPrismTop.glfwMouseButtonCallback;
 	glfwCursorPosCallback = inPrismTop.glfwCursorPosCallback;
 	ddsFaceLoadedFlag = inPrismTop.ddsFaceLoadedFlag;
 	ddsSideLoadedFlag = inPrismTop.ddsSideLoadedFlag;
@@ -155,6 +155,13 @@ void prismTop::upateFaceImage() {
 	glBindBuffer(GL_ARRAY_BUFFER, faceUvBufferId);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, faceUvBufferData.size() * sizeof(vec2), &faceUvBufferData[0]);
 	faceImageChangedFlag = false;
+}
+
+// Copy face image uv vector from another prismTop
+void prismTop::copyFaceImageUvs(const prismTop &inPrismTop) {
+	if (nSides != inPrismTop.nSides || textureId != inPrismTop.textureId) return;
+	faceUvBufferData = inPrismTop.faceUvBufferData;
+	faceImageChangedFlag = true;
 }
 
 // Draw the object in the main loop

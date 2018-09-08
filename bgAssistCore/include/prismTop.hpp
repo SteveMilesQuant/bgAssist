@@ -57,8 +57,8 @@ public:
 	void loadFaceImage(const char * imagepath, GLboolean ddsFormatFlag);
 	void loadSideImage(const char * imagepath, GLboolean ddsFormatFlag);
 
-	// Update the face image when you move it
-	void upateFaceImage();
+	// Copy face image uv vector from another prismTop
+	void copyFaceImageUvs(const prismTop &inPrismTop);
 
 	// Draw the object; call in main loop
 	void draw();
@@ -70,7 +70,7 @@ public:
 
 	// Action function pointers
 	void (*glfwCursorPosCallback)(GLFWwindow* window, double x, double y);
-	void (*doWhenSelected)(prismTop * prismTop);
+	void (*glfwMouseButtonCallback)(GLFWwindow* window, int button, int action, int mods);
 
 private:
 	int nSides; // number of sides in the polygon
@@ -122,6 +122,9 @@ private:
 
 	// Fill vertices and uv coords
 	void fillVerticesAndUVs(GLboolean faceOnly);
+
+	// Update the face image when you move it
+	void upateFaceImage();
 
 	// Update the model matrix whenever you change the position of the object
 	void updateModelMatrix();
