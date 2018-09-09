@@ -26,10 +26,12 @@ public:
 	void setLocation(vec2 location);
 
 	// Accessor functions to underlying prism
+	void setProgramId(GLuint inProgramId) { rectPrism.setProgramId(inProgramId); }
 	void setCamera(timedMat4 *inCamera) { rectPrism.setCamera(inCamera); }
 	void setProjection(timedMat4 *inProjection) { rectPrism.setProjection(inProjection); }
-	void setMatrixId(GLuint inMatrixId) { rectPrism.setMatrixId(inMatrixId); }
-	void setTextureId(GLuint inTextureId) { rectPrism.setTextureId(inTextureId); }
+	void setLight(lightSource * inLight) { rectPrism.setLight(inLight); }
+	void setAmbientRatio(GLfloat inAmbientRatio) { rectPrism.setAmbientRatio(inAmbientRatio); }
+	void setSpecularRatio(GLfloat inSpecularRatio) { rectPrism.setSpecularRatio(inSpecularRatio); }
 	void loadFaceImage(const char * imagepath) { rectPrism.loadFaceImage(imagepath, true); }
 	void loadSideImage(const char * imagepath) { rectPrism.loadSideImage(imagepath, true); }
 	void draw() { rectPrism.draw(); }

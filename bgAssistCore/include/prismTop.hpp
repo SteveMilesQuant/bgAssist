@@ -33,15 +33,17 @@ public:
 
 	// Setters and getters for transformations in the model matrix
 	void setNSides(int inNSides) { if (buffsPassedFlag) return; nSides = inNSides; }
+	void setProgramId(GLuint inProgramId);
 	void setScale(vec3 inScaling) { scaling = inScaling; updateModelMatrixFlag = true; }
 	void setTranslation(vec3 inTranslation) { translation = inTranslation; updateModelMatrixFlag = true; }
 	void setRotation(GLfloat inRadians, vec3 inAxis) { rotationRadians = inRadians;  rotationAxis = inAxis;  updateModelMatrixFlag = true; }
 	void setCamera(timedMat4 *inCamera) { camera = inCamera; updateMVPFlag = true; }
 	void setProjection(timedMat4 *inProjection) { projection = inProjection; updateMVPFlag = true; }
+	void setLight(lightSource *inLight) { light = inLight; }
+	void setAmbientRatio(GLfloat inAmbientRatio) { ambientRatio = max(inAmbientRatio, 0.0f); }
+	void setSpecularRatio(GLfloat inSpecularRatio) { specularRatio = max(inSpecularRatio, 0.0f); }
 	void setUvScale(vec2 uvScaleIn) { if (uvScaleIn == uvScale) return;  uvScale = uvScaleIn; faceImageChangedFlag = true; }
 	void setUvCenter(vec2 uvCenterIn) { if (uvCenterIn == uvCenter) return;  uvCenter = uvCenterIn; faceImageChangedFlag = true; }
-	void setMatrixId(GLuint inMatrixId) { mvpId = inMatrixId; }
-	void setTextureId(GLuint inTextureId) { textureId = inTextureId; }
 	vec3 getScale() { return scaling; }
 	vec3 getTranslation() { return translation; }
 	timedMat4 & getCamera() { return *camera; }
@@ -85,12 +87,27 @@ private:
 	vec3 rotationAxis;
 	timedMat4 *projection;
 	timedMat4 *camera;
+	lightSource *light;
+	GLfloat ambientRatio; // ratio to apply to ambient light (e.g. 0.1)
+	GLfloat specularRatio; // ratio to apply to specular light (e.g. 0.3)
+
 	mat4 modelMatrix; // model matrix
 	mat4 MVP; // transformation matrix passed to GLM
 	GLboolean updateModelMatrixFlag;
 	GLboolean updateMVPFlag;
 	double timeMVPUpdated;
-	GLuint mvpId; // glGetUniformLocation(programID, "MVP");
+
+	// GL program (shader) and uniform IDs
+	GLuint programId; // from LoadShaders
+	GLuint mvpId; // glGetUniformLocation(programId, "MVP");
+	GLuint textureId; // glGetUniformLocation(programId, "standardShadingTexture");
+	GLuint modelMatrixId; // glGetUniformLocation(programId, "M");
+	GLuint viewMatrixId; // glGetUniformLocation(programId, "V");
+	GLuint lightPositionId; // glGetUniformLocation(programId, "LightPosition_worldspace");
+	GLuint lightPowerId; // glGetUniformLocation(programId, "LightPower");
+	GLuint lightColorId; // glGetUniformLocation(programId, "LightColor");
+	GLuint ambientRatioId; // glGetUniformLocation(programId, "AmbientColorFactor");
+	GLuint specularRatioId; // glGetUniformLocation(programId, "SpecularColorFactor");
 
 	// UV (image mapping) transformation
 	vec2 uvScale;
@@ -102,23 +119,26 @@ private:
 	GLboolean copiedFaceImageFlag;
 	GLboolean copiedSideImageFlag;
 
-	// Vertex and uv buffers
+	// Vertex, uv, and normal buffers
 	GLuint faceVertexBufferId;
 	vector<vec3> faceVertexBufferData;
 	GLuint faceUvBufferId;
 	vector<vec2> faceUvBufferData;
+	GLuint faceNormalBufferId;
+	vector<vec3> faceNormalBufferData;
 
 	GLuint sideVertexBufferId;
 	vector<vec3> sideVertexBufferData;
 	GLuint sideUvBufferId;
 	vector<vec2> sideUvBufferData;
+	GLuint sideNormalBufferId;
+	vector<vec3> sideNormalBufferData;
 
 	GLboolean buffsPassedFlag;
 
-	// Texture ID
+	// Image IDs
 	GLuint faceImageId; // from loading the face image
 	GLuint sideImageId; // from loading the side image
-	GLuint textureId; // glGetUniformLocation(programID, "prismTopTexture");
 
 	// For OBB, the minimum and maximum coordinates
 	vec3 minCoords;

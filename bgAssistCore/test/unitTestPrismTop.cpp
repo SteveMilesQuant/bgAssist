@@ -146,6 +146,7 @@ int main(void)
 	if (!glfwInit())
 	{
 		fprintf(stderr, "Failed to initialize GLFW\n");
+		getchar();
 		return -1;
 	}
 
@@ -162,6 +163,7 @@ int main(void)
 	GLFWwindow* window = glfwCreateWindow(mode->width, mode->height, "Playground", NULL, NULL);
 	if (window == NULL) {
 		fprintf(stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
+		getchar();
 		glfwTerminate();
 		return -1;
 	}
@@ -171,11 +173,13 @@ int main(void)
 	glewExperimental = true; // Needed in core profile
 	if (glewInit() != GLEW_OK) {
 		fprintf(stderr, "Failed to initialize GLEW\n");
+		getchar();
 		return -1;
 	}
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
+	glEnable(GL_CULL_FACE);
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
 	GLuint VertexArrayID;
@@ -195,16 +199,12 @@ int main(void)
 
 	// Load shaders
 	string shaderPath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/shaders/";
-	string vertexShaderPath = shaderPath + "TransformVertexShader.vertexshader";
-	string fragmentShaderPath = shaderPath + "TextureFragmentShader.fragmentshader";
+	string vertexShaderPath = shaderPath + "StandardShading.vertexshader";
+	string fragmentShaderPath = shaderPath + "StandardShading.fragmentshader";
 	GLuint programID = LoadShaders(vertexShaderPath.c_str(), fragmentShaderPath.c_str());
 
-	// Get matrix nad texture ids
-	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
-	GLuint TextureID = glGetUniformLocation(programID, "prismTopTexture");
-
-	// Create camera
-	timedMat4 Projection = timedMat4(glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f));
+	// Create camera and projection
+	timedMat4 Projection = timedMat4(perspective(radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f));
 	glm::mat4 FrontView = glm::lookAt(
 		glm::vec3(0, -2, 6), // Camera location, in World Space
 		glm::vec3(0, 0, 0), // and looks at the origin
@@ -220,15 +220,19 @@ int main(void)
 	GLboolean onFrontView = true;
 	GLboolean viewUpdated = false;
 
+	// Set up light
+	lightSource Light;
+	Light.position = vec3(0, -4, 5);
+
 	// Hex prism
 	prismTop hexPrism(6);
 	hexPrism.passBuffersToGLM(GL_DYNAMIC_DRAW);
-	hexPrism.setMatrixId(MatrixID);
-	hexPrism.setTextureId(TextureID);
+	hexPrism.setProgramId(programID);
 	hexPrism.glfwCursorPosCallback = dragSelectedPrismImage;
 	hexPrism.glfwMouseButtonCallback = dragPrismImageBegin;
 	hexPrism.setCamera(&Camera);
 	hexPrism.setProjection(&Projection);
+	hexPrism.setLight(&Light);
 	hexPrism.setScale(vec3(1.0f, 1.0f, 1.0f / 10.0f));
 	hexPrism.setTranslation(vec3(1.5f, 0.0f, 0.0f));
 
@@ -245,12 +249,12 @@ int main(void)
 	// Penta prism
 	prismTop pentaPrism(5);
 	pentaPrism.passBuffersToGLM(GL_STATIC_DRAW);
-	pentaPrism.setMatrixId(MatrixID);
-	pentaPrism.setTextureId(TextureID);
+	pentaPrism.setProgramId(programID);
 	pentaPrism.glfwCursorPosCallback = dragSelectedPrism;
 	pentaPrism.glfwMouseButtonCallback = NULL;
 	pentaPrism.setCamera(&Camera);
 	pentaPrism.setProjection(&Projection);
+	pentaPrism.setLight(&Light);
 	pentaPrism.setScale(vec3(1.0f, 1.0f, 1.0f / 4.0f));
 	pentaPrism.setTranslation(vec3(-1.5f, 0.0f, 0.0f));
 

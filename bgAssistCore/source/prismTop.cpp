@@ -30,11 +30,15 @@ void prismTop::constructPrismTop(int nSidesIn){
 	copiedFaceImageFlag = false;
 	copiedSideImageFlag = false;
 	buffsPassedFlag = false;
+	ambientRatio = 0.1f;
+	specularRatio = 0.3f;
 
 	faceVertexBufferData.clear();
 	faceUvBufferData.clear();
+	faceNormalBufferData.clear();
 	sideVertexBufferData.clear();
 	sideUvBufferData.clear();
+	sideNormalBufferData.clear();
 
 	glfwMouseButtonCallback = NULL;
 	glfwCursorPosCallback = NULL;
@@ -62,6 +66,17 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 	glfwCursorPosCallback = inPrismTop.glfwCursorPosCallback;
 	ddsFaceLoadedFlag = inPrismTop.ddsFaceLoadedFlag;
 	ddsSideLoadedFlag = inPrismTop.ddsSideLoadedFlag;
+	programId = inPrismTop.programId;
+	modelMatrixId = inPrismTop.modelMatrixId;
+	viewMatrixId = inPrismTop.viewMatrixId;
+	lightPositionId = inPrismTop.lightPositionId;
+	lightColorId = inPrismTop.lightColorId;
+	lightPowerId = inPrismTop.lightPowerId;
+	ambientRatioId = inPrismTop.ambientRatioId;
+	specularRatioId = inPrismTop.specularRatioId;
+	light = inPrismTop.light;
+	ambientRatio = inPrismTop.ambientRatio;
+	specularRatio = inPrismTop.specularRatio;
 	textureId = inPrismTop.textureId;
 	mvpId = inPrismTop.mvpId;
 	faceImageId = inPrismTop.faceImageId;
@@ -73,8 +88,10 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 	// Let passBuffersToGLM generate the vertices
 	faceVertexBufferData.clear();
 	faceUvBufferData.clear();
+	faceNormalBufferData.clear();
 	sideVertexBufferData.clear();
 	sideUvBufferData.clear();
+	sideNormalBufferData.clear();
 
 	faceImageChangedFlag = true;
 	updateModelMatrixFlag = true;
@@ -86,10 +103,12 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 prismTop::~prismTop() {
 	glDeleteBuffers(1, &faceVertexBufferId);
 	glDeleteBuffers(1, &faceUvBufferId);
+	glDeleteBuffers(1, &faceNormalBufferId);
 	if (!copiedFaceImageFlag) glDeleteTextures(1, &faceImageId);
 
 	glDeleteBuffers(1, &sideVertexBufferId);
 	glDeleteBuffers(1, &sideUvBufferId);
+	glDeleteBuffers(1, &sideNormalBufferId);
 	if (!copiedSideImageFlag) glDeleteTextures(1, &sideImageId);
 }
 
@@ -102,10 +121,12 @@ void prismTop::passBuffersToGLM(GLuint uvStaticOrDynamicForFaceImage) {
 	int nFaceCoordinates = nSides * 3;
 	faceVertexBufferData.reserve(nFaceCoordinates);
 	faceUvBufferData.reserve(nFaceCoordinates);
+	faceNormalBufferData.reserve(nFaceCoordinates);
 
 	int nSideCoordinates = nSides * 6;
 	sideVertexBufferData.reserve(nSideCoordinates);
 	sideUvBufferData.reserve(nSideCoordinates);
+	sideNormalBufferData.reserve(nSideCoordinates);
 	
 	fillVerticesAndUVs(false);
 
@@ -115,6 +136,9 @@ void prismTop::passBuffersToGLM(GLuint uvStaticOrDynamicForFaceImage) {
 	glGenBuffers(1, &faceUvBufferId);
 	glBindBuffer(GL_ARRAY_BUFFER, faceUvBufferId);
 	glBufferData(GL_ARRAY_BUFFER, faceUvBufferData.size() * sizeof(vec2), &faceUvBufferData[0], uvStaticOrDynamicForFaceImage);
+	glGenBuffers(1, &faceNormalBufferId);
+	glBindBuffer(GL_ARRAY_BUFFER, faceNormalBufferId);
+	glBufferData(GL_ARRAY_BUFFER, faceNormalBufferData.size() * sizeof(vec3), &faceNormalBufferData[0], GL_STATIC_DRAW);
 
 	glGenBuffers(1, &sideVertexBufferId);
 	glBindBuffer(GL_ARRAY_BUFFER, sideVertexBufferId);
@@ -122,6 +146,9 @@ void prismTop::passBuffersToGLM(GLuint uvStaticOrDynamicForFaceImage) {
 	glGenBuffers(1, &sideUvBufferId);
 	glBindBuffer(GL_ARRAY_BUFFER, sideUvBufferId);
 	glBufferData(GL_ARRAY_BUFFER, sideUvBufferData.size() * sizeof(vec2), &sideUvBufferData[0], GL_STATIC_DRAW);
+	glGenBuffers(1, &sideNormalBufferId);
+	glBindBuffer(GL_ARRAY_BUFFER, sideNormalBufferId);
+	glBufferData(GL_ARRAY_BUFFER, sideNormalBufferData.size() * sizeof(vec3), &sideNormalBufferData[0], GL_STATIC_DRAW);
 
 	buffsPassedFlag = true;
 }
@@ -182,10 +209,23 @@ void prismTop::draw() {
 	updateModelMatrix();
 	updateMVP();
 
-	// Send our transformation to the currently bound shader, 
-	// in the "MVP" uniform
+	// Send our transformations to the shader
 	glUniformMatrix4fv(mvpId, 1, GL_FALSE, &MVP[0][0]);
-
+	glUniformMatrix4fv(modelMatrixId, 1, GL_FALSE, &modelMatrix[0][0]);
+	if (camera) glUniformMatrix4fv(viewMatrixId, 1, GL_FALSE, &camera->getMatrix()[0][0]);
+	if (light) {
+		glUniform3f(lightPositionId, light->position.x, light->position.y, light->position.z);
+		glUniform3f(lightColorId, light->color.x, light->color.y, light->color.z);
+		glUniform1f(lightPowerId, light->power);
+	}
+	else {
+		lightSource defaultLight;
+		glUniform3f(lightPositionId, defaultLight.position.x, defaultLight.position.y, defaultLight.position.z);
+		glUniform3f(lightColorId, defaultLight.color.x, defaultLight.color.y, defaultLight.color.z);
+		glUniform1f(lightPowerId, defaultLight.power);
+	}
+	glUniform1f(ambientRatioId, ambientRatio);
+	glUniform1f(specularRatioId, specularRatio);
 
 	// DRAW FACE
 	// Bind our texture in Texture Unit 0
@@ -217,9 +257,20 @@ void prismTop::draw() {
 		(void*)0                          // array buffer offset
 	);
 
+	// 3rd attribute buffer : normals
+	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, faceNormalBufferId);
+	glVertexAttribPointer(
+		2,                                // attribute. No particular reason for 2, but must match the layout in the shader.
+		3,                                // size
+		GL_FLOAT,                         // type
+		GL_FALSE,                         // normalized?
+		0,                                // stride
+		(void*)0                          // array buffer offset
+	);
+
 	// Draw our object(s)
 	glDrawArrays(GL_TRIANGLES, 0, nSides * 3);
-	glDisableVertexAttribArray(0);
 
 	// DRAW SIDES
 	// Bind our texture in Texture Unit 0
@@ -251,9 +302,25 @@ void prismTop::draw() {
 		(void*)0                          // array buffer offset
 	);
 
+	// 3rd attribute buffer : normals
+	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, sideNormalBufferId);
+	glVertexAttribPointer(
+		2,                                // attribute. No particular reason for 2, but must match the layout in the shader.
+		3,                                // size
+		GL_FLOAT,                         // type
+		GL_FALSE,                         // normalized?
+		0,                                // stride
+		(void*)0                          // array buffer offset
+	);
+
 	// Draw our object(s)
 	glDrawArrays(GL_TRIANGLES, 0, nSides * 6);
+
+	// Disable vertex attributes
 	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
 }
 
 
@@ -261,18 +328,20 @@ void prismTop::draw() {
 void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
 	int i;
 	vec3 faceCenter(0.0f, 0.0f, 1.0f);
-	vec3 v3RotAxis(0.0f, 0.0f, 1.0f); // Rotate about z+
-	mat4x4 matRot = rotate(2.0f * pi<float>() / nSides, v3RotAxis);
-	vec4 startPoint = rotate(pi<float>() / nSides, v3RotAxis) * vec4(1, 0, 1, 0);
+	vec3 zaxis(0.0f, 0.0f, 1.0f); // Rotate about z+
+	mat4x4 matRot = rotate(2.0f * pi<float>() / nSides, zaxis);
+	vec4 startPoint = rotate(pi<float>() / nSides, zaxis) * vec4(1, 0, 1, 0);
 	vec4 thisPoint = startPoint;
 	vec4 nextPoint = matRot * thisPoint;
 
 	// Clear the data
 	faceVertexBufferData.clear();
 	faceUvBufferData.clear();
+	faceNormalBufferData.clear();
 	if (!faceOnly) {
 		sideVertexBufferData.clear();
 		sideUvBufferData.clear();
+		sideNormalBufferData.clear();
 	}
 	
 	for (i = 0; i < nSides; i++) {
@@ -285,31 +354,42 @@ void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
 		maxCoords.y = max(maxCoords.y, thisPoint.y);
 
 		// Front triangle
+		// Make sure your triangles go clockwise by vertex (this tells us the front face)
 		faceVertexBufferData.push_back(faceCenter);
 		faceVertexBufferData.push_back(vec3(thisPoint));
 		faceVertexBufferData.push_back(vec3(nextPoint));
 		faceUvBufferData.push_back(uvCenter);
 		faceUvBufferData.push_back(vec2(thisPoint.x*uvScale.x, thisPoint.y*uvScale.y) + uvCenter);
 		faceUvBufferData.push_back(vec2(nextPoint.x*uvScale.x, nextPoint.y*uvScale.y) + uvCenter);
+		faceNormalBufferData.push_back(zaxis);
+		faceNormalBufferData.push_back(zaxis);
+		faceNormalBufferData.push_back(zaxis);
 		
 		// Sometimes we only update the face
 		if (!faceOnly) {
+			vec3 normal = normalize(vec3(thisPoint.x, thisPoint.y, 0) + vec3(thisPoint.x, thisPoint.y, 0));
 
 			// First half of side
 			sideVertexBufferData.push_back(vec3(thisPoint));
-			sideUvBufferData.push_back(vec2(1, 1));
 			sideVertexBufferData.push_back(vec3(thisPoint.x, thisPoint.y, -1));
-			sideUvBufferData.push_back(vec2(1, 0));
 			sideVertexBufferData.push_back(vec3(nextPoint));
+			sideUvBufferData.push_back(vec2(1, 1));
+			sideUvBufferData.push_back(vec2(1, 0));
 			sideUvBufferData.push_back(vec2(0, 1));
+			sideNormalBufferData.push_back(normal);
+			sideNormalBufferData.push_back(normal);
+			sideNormalBufferData.push_back(normal);
 
 			// Second half of side
 			sideVertexBufferData.push_back(vec3(nextPoint));
-			sideUvBufferData.push_back(vec2(0, 1));
-			sideVertexBufferData.push_back(vec3(nextPoint.x, nextPoint.y, -1));
-			sideUvBufferData.push_back(vec2(0, 0));
 			sideVertexBufferData.push_back(vec3(thisPoint.x, thisPoint.y, -1));
-			sideUvBufferData.push_back(vec2(1, 0));
+			sideVertexBufferData.push_back(vec3(nextPoint.x, nextPoint.y, -1));
+			sideUvBufferData.push_back(vec2(0, 1));
+			sideUvBufferData.push_back(vec2(1, 0)); 
+			sideUvBufferData.push_back(vec2(0, 0));
+			sideNormalBufferData.push_back(normal);
+			sideNormalBufferData.push_back(normal);
+			sideNormalBufferData.push_back(normal);
 
 		}
 
@@ -349,4 +429,17 @@ void prismTop::loadSideImage(const char * imagepath, GLboolean ddsFormatFlag) {
 }
 
 
+// Set the program, get uniform IDs
+void prismTop::setProgramId(GLuint inProgramId) {
+	programId = inProgramId;
+	mvpId = glGetUniformLocation(programId, "MVP");
+	textureId = glGetUniformLocation(programId, "standardShadingTexture");
+	modelMatrixId = glGetUniformLocation(programId, "M");
+	viewMatrixId = glGetUniformLocation(programId, "V");
+	lightPositionId = glGetUniformLocation(programId, "LightPosition_worldspace");
+	lightColorId = glGetUniformLocation(programId, "LightColor");
+	lightPowerId = glGetUniformLocation(programId, "LightPower"); 
+   ambientRatioId = glGetUniformLocation(programId, "AmbientColorFactor");
+	specularRatioId = glGetUniformLocation(programId, "SpecularColorFactor");
+}
 

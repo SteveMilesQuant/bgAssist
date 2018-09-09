@@ -15,7 +15,7 @@ GLfloat getGlobalTileUnitLength() {
 }
 
 // Constructors
-GLfloat defaultTileThickness = 3.0f;
+GLfloat defaultTileThickness = 5.0f;
 void tile::constructTile(ivec2 inDimensions, GLboolean builderWorldFlag, GLfloat inRelativeThickness) {
 	ivec2 tmpDimensions = ivec2(max(inDimensions[0], 1), max(inDimensions[1], 1));
 	tileDimensions[0] = min(tmpDimensions[0], tmpDimensions[1]);
@@ -50,6 +50,7 @@ tile::~tile(){
 tile::tile(const tile &inTile) {
 	tileDimensions = inTile.tileDimensions;
 	rectPrism = inTile.rectPrism;
+	relativeThickness = inTile.relativeThickness;
 }
 
 // Set location (in xy plane only)

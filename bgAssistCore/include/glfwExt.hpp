@@ -22,6 +22,23 @@ namespace glm {
 
 		void noteTime() { timeWasUpdated = glfwGetTime(); }
 	};
+
+	class lightSource {
+	public:
+		lightSource() {
+			position = vec3(0, 0, 0);
+			power = 50.0f;
+			color = vec3(1, 1, 1);
+		}
+		lightSource(const lightSource &inLightSource) {
+			position = inLightSource.position;
+			power = inLightSource.power;
+			color = inLightSource.color;
+		}
+		vec3 position;
+		GLfloat power;
+		vec3 color;
+	};
 };
 
 void screenPosToWorldRay(

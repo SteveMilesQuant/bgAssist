@@ -21,8 +21,12 @@ public:
 	void setLocation(vec2 location);
 
 	// Accessor functions to underlying prism
+	void setProgramId(GLuint inProgramId) { tokenPrism.setProgramId(inProgramId); }
 	void setCamera(timedMat4 *inCamera) { tokenPrism.setCamera(inCamera); }
 	void setProjection(timedMat4 *inProjection) { tokenPrism.setProjection(inProjection); }
+	void setLight(lightSource * inLight) { tokenPrism.setLight(inLight); }
+	void setAmbientRatio(GLfloat inAmbientRatio) { tokenPrism.setAmbientRatio(inAmbientRatio); }
+	void setSpecularRatio(GLfloat inSpecularRatio) { tokenPrism.setSpecularRatio(inSpecularRatio); }
 	void loadFaceImage(const char * imagepath) { tokenPrism.loadFaceImage(imagepath, true); }
 	void loadSideImage(const char * imagepath) { tokenPrism.loadSideImage(imagepath, true); }
 	void draw() { tokenPrism.draw(); }

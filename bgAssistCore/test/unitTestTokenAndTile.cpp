@@ -27,6 +27,7 @@ int main(void)
 	if (!glfwInit())
 	{
 		fprintf(stderr, "Failed to initialize GLFW\n");
+		getchar();
 		return -1;
 	}
 
@@ -43,6 +44,7 @@ int main(void)
 	GLFWwindow* window = glfwCreateWindow(mode->width, mode->height, "Playground", NULL, NULL);
 	if (window == NULL) {
 		fprintf(stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n");
+		getchar(); 
 		glfwTerminate();
 		return -1;
 	}
@@ -52,11 +54,13 @@ int main(void)
 	glewExperimental = true; // Needed in core profile
 	if (glewInit() != GLEW_OK) {
 		fprintf(stderr, "Failed to initialize GLEW\n");
+		getchar();
 		return -1;
 	}
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
+	glEnable(GL_CULL_FACE);
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
 	GLuint VertexArrayID;
@@ -74,23 +78,25 @@ int main(void)
 
 	// Load shaders
 	string shaderPath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/shaders/";
-	string vertexShaderPath = shaderPath + "TransformVertexShader.vertexshader";
-	string fragmentShaderPath = shaderPath + "TextureFragmentShader.fragmentshader";
+	string vertexShaderPath = shaderPath + "StandardShading.vertexshader";
+	string fragmentShaderPath = shaderPath + "StandardShading.fragmentshader";
 	GLuint programID = LoadShaders(vertexShaderPath.c_str(), fragmentShaderPath.c_str());
-
-	// Get matrix nad texture ids
-	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
-	GLuint TextureID = glGetUniformLocation(programID, "prismTopTexture");
 
 	// Create camera
 	timedMat4 Projection = timedMat4(glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f));
 	glm::mat4 View = glm::lookAt(
-		glm::vec3(0, -3, 4), // Camera location, in World Space
+		glm::vec3(0, -2.5, 3), // Camera location, in World Space
 		glm::vec3(0, 0, 0), // and looks at the origin
 		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 	);
 	timedMat4 Camera = timedMat4(View);
 
+	// Set up light
+	lightSource Light;
+	Light.position = vec3(1, -5, 5);
+	Light.power = 60.0f;
+
+	// Paths to images
 	string imagePath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/test/images/";
 	string sideImagePath = imagePath + "cardboard_sides_BMP_DXT3_1.DDS";
 	string leftFaceImagePath = imagePath + "somethingWeird_BMP_DXT3_1.DDS";
@@ -98,10 +104,11 @@ int main(void)
 
 	// TODO: create master token in upper right
 	tile leftTile(ivec2(1, 2), true);
+	leftTile.setProgramId(programID); 
 	leftTile.setCamera(&Camera);
 	leftTile.setProjection(&Projection);
-	leftTile.setMatrixId(MatrixID);
-	leftTile.setTextureId(TextureID);
+	leftTile.setLight(&Light);
+	leftTile.setAmbientRatio(0.2);
 	leftTile.loadFaceImage(leftFaceImagePath.c_str());
 	leftTile.loadSideImage(sideImagePath.c_str());
 	leftTile.setLocation(vec2(-0.5f,0.0f));
