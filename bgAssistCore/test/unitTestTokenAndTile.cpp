@@ -96,7 +96,7 @@ int main(void)
 	string leftFaceImagePath = imagePath + "somethingWeird_BMP_DXT3_1.DDS";
 	string rightFaceImagePath = imagePath + "outdoorTile_BMP_DXT3_1.DDS";
 
-	// TODO: create objects
+	// TODO: create master token in upper right
 	tile leftTile(ivec2(1, 2), true);
 	leftTile.setCamera(&Camera);
 	leftTile.setProjection(&Projection);
@@ -133,10 +133,15 @@ int main(void)
 			screenUpdatedFlag = false;
 		}
 
-		// TODO: draw underlying tokens
+		// Draw all objects
 		vector<tile *>::iterator tileIter = allTiles.begin();
 		for (; tileIter != allTiles.end(); tileIter++) {
 			(*tileIter)->draw();
+			list<token *> &tokenList = (*tileIter)->tokenList;
+			list<token *>::iterator tokenIter = tokenList.begin();
+			for (; tokenIter != tokenList.end(); tokenIter++) {
+				(*tokenIter)->draw();
+			}
 		}
 
 		glfwSwapBuffers(window);
