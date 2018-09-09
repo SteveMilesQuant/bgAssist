@@ -222,6 +222,7 @@ int main(void)
 
 	// Hex prism
 	prismTop hexPrism(6);
+	hexPrism.passBuffersToGLM(GL_DYNAMIC_DRAW);
 	hexPrism.setMatrixId(MatrixID);
 	hexPrism.setTextureId(TextureID);
 	hexPrism.glfwCursorPosCallback = dragSelectedPrismImage;
@@ -239,11 +240,11 @@ int main(void)
 	string sideImagePath = imagePath + "cardboard_sides.bmp";
 	hexPrism.loadSideImage(sideImagePath.c_str(), false);
 
-	hexPrism.passBuffersToGLM(GL_DYNAMIC_DRAW);
 	allPrisms.push_back(&hexPrism);
 
 	// Penta prism
 	prismTop pentaPrism(5);
+	pentaPrism.passBuffersToGLM(GL_STATIC_DRAW);
 	pentaPrism.setMatrixId(MatrixID);
 	pentaPrism.setTextureId(TextureID);
 	pentaPrism.glfwCursorPosCallback = dragSelectedPrism;
@@ -259,7 +260,6 @@ int main(void)
 	pentaPrism.loadFaceImage(unicornPath.c_str(), false);
 	pentaPrism.loadSideImage(sideImagePath.c_str(), false);
 
-	pentaPrism.passBuffersToGLM(GL_STATIC_DRAW);
 	allPrisms.push_back(&pentaPrism);
 
 	do {

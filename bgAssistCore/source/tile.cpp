@@ -14,30 +14,32 @@ GLfloat getGlobalTileUnitLength() {
 	return tileUnitLength;
 }
 
-// Constructor
-GLfloat defaultTileThickness = 2.0f;
-tile::tile(ivec2 inDimensions) {
-	tile(inDimensions, defaultTileThickness);
-}
-tile::tile(ivec2 inDimensions, GLfloat inRelativeThickness) {
+// Constructors
+GLfloat defaultTileThickness = 3.0f;
+void tile::constructTile(ivec2 inDimensions, GLboolean builderWorldFlag, GLfloat inRelativeThickness) {
 	ivec2 tmpDimensions = ivec2(max(inDimensions[0], 1), max(inDimensions[1], 1));
-	dimensions[0] = min(tmpDimensions[0], tmpDimensions[1]);
-	dimensions[1] = max(tmpDimensions[0], tmpDimensions[1]);
+	tileDimensions[0] = min(tmpDimensions[0], tmpDimensions[1]);
+	tileDimensions[1] = max(tmpDimensions[0], tmpDimensions[1]);
 	relativeThickness = inRelativeThickness;
-	rectPrism = prismTop(4);
-	rectPrism.setScale(vec3((GLfloat)dimensions.x, (GLfloat)dimensions.y, 0.5*relativeThickness/ getGlobalTileUnitLength()));
+	rectPrism.setNSides(4);
 	setLocation(vec2(0, 0));
 	rectPrism.setUvCenter(vec2(0.5, 0.5));
-	GLfloat scale = sqrt(2.0f) / 4.0f;
+
+	GLfloat scale = 1.0f/sqrt(2.0f);
+	rectPrism.setScale(vec3(scale*tileDimensions.x, scale*tileDimensions.y, 0.5f*relativeThickness / getGlobalTileUnitLength()));
 	rectPrism.setUvScale(vec2(scale, scale));
 
 	// In the builder, we may move images around
-#ifdef BGASSIST_BUILDER_WORLD
-	rectPrism.passBuffersToGLM(GL_DYNAMIC_DRAW);
-#else
-	rectPrism.passBuffersToGLM(GL_STATIC_DRAW);
-#endif
+	if (builderWorldFlag) rectPrism.passBuffersToGLM(GL_DYNAMIC_DRAW);
+	else rectPrism.passBuffersToGLM(GL_STATIC_DRAW);
 }
+tile::tile(ivec2 inDimensions, GLboolean builderWorldFlag) {
+	constructTile(inDimensions, builderWorldFlag, defaultTileThickness);
+}
+tile::tile(ivec2 inDimensions, GLboolean builderWorldFlag, GLfloat inRelativeThickness) {
+	constructTile(inDimensions, builderWorldFlag, inRelativeThickness);
+}
+
 
 // Destructor
 tile::~tile(){
@@ -46,13 +48,13 @@ tile::~tile(){
 
 // Copy constructor
 tile::tile(const tile &inTile) {
-	dimensions = inTile.dimensions;
+	tileDimensions = inTile.tileDimensions;
 	rectPrism = inTile.rectPrism;
 }
 
 // Set location (in xy plane only)
 void tile::setLocation(vec2 location) {
-	rectPrism.setTranslation(vec3(location, -0.5*relativeThickness/ getGlobalTileUnitLength())); // top level with the xy plane
+	rectPrism.setTranslation(vec3(location, -0.5f*relativeThickness/ getGlobalTileUnitLength())); // top level with the xy plane
 }
 
 // Test an intersection with a ray

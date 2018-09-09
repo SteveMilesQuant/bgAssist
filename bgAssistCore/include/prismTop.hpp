@@ -32,6 +32,7 @@ public:
 	const int nTriangles() { return nSides * 3; }
 
 	// Setters and getters for transformations in the model matrix
+	void setNSides(int inNSides) { if (buffsPassedFlag) return; nSides = inNSides; }
 	void setScale(vec3 inScaling) { scaling = inScaling; updateModelMatrixFlag = true; }
 	void setTranslation(vec3 inTranslation) { translation = inTranslation; updateModelMatrixFlag = true; }
 	void setRotation(GLfloat inRadians, vec3 inAxis) { rotationRadians = inRadians;  rotationAxis = inAxis;  updateModelMatrixFlag = true; }
@@ -112,6 +113,8 @@ private:
 	GLuint sideUvBufferId;
 	vector<vec2> sideUvBufferData;
 
+	GLboolean buffsPassedFlag;
+
 	// Texture ID
 	GLuint faceImageId; // from loading the face image
 	GLuint sideImageId; // from loading the side image
@@ -130,6 +133,9 @@ private:
 	// Update the model matrix whenever you change the position of the object
 	void updateModelMatrix();
 	void updateMVP();
+
+	// Actual constructor function
+	void constructPrismTop(int nSidesIn);
 };
 
 

@@ -1,3 +1,6 @@
+
+#define BGASSIST_BUILDER_WORLD
+
 #include <tile.hpp>
 #include <shader.hpp>
 
@@ -15,6 +18,8 @@ using namespace glm;
 #include <glfwExt.hpp>
 
 class vector<tile *> allTiles;
+
+
 
 int main(void)
 {
@@ -58,8 +63,8 @@ int main(void)
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
 
-	// Dark blue background
-	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+	// Black background
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	// TODO: set callbacks
 
@@ -80,7 +85,7 @@ int main(void)
 	// Create camera
 	timedMat4 Projection = timedMat4(glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f));
 	glm::mat4 View = glm::lookAt(
-		glm::vec3(0, -2, 6), // Camera location, in World Space
+		glm::vec3(0, -3, 4), // Camera location, in World Space
 		glm::vec3(0, 0, 0), // and looks at the origin
 		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 	);
@@ -88,17 +93,24 @@ int main(void)
 
 	string imagePath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/test/images/";
 	string sideImagePath = imagePath + "cardboard_sides_BMP_DXT3_1.DDS";
+	string leftFaceImagePath = imagePath + "somethingWeird_BMP_DXT3_1.DDS";
+	string rightFaceImagePath = imagePath + "outdoorTile_BMP_DXT3_1.DDS";
 
 	// TODO: create objects
-	tile leftTile = tile(ivec2(1, 2));
+	tile leftTile(ivec2(1, 2), true);
 	leftTile.setCamera(&Camera);
 	leftTile.setProjection(&Projection);
 	leftTile.setMatrixId(MatrixID);
 	leftTile.setTextureId(TextureID);
-	leftTile.loadFaceImage((imagePath+"somethingWeird_BMP_DXT3_1.DDS").c_str());
+	leftTile.loadFaceImage(leftFaceImagePath.c_str());
 	leftTile.loadSideImage(sideImagePath.c_str());
-	leftTile.setLocation(vec2(0,0));
+	leftTile.setLocation(vec2(-0.5f,0.0f));
 	allTiles.push_back(&leftTile);
+
+	tile rightTile= leftTile;
+	rightTile.loadFaceImage(rightFaceImagePath.c_str());
+	rightTile.setLocation(vec2(0.5f, 0.0f));
+	allTiles.push_back(&rightTile);
 
 	do {
 
@@ -122,11 +134,10 @@ int main(void)
 		}
 
 		// TODO: draw underlying tokens
-		/*vector<tile *>::iterator tileIter = allTiles.begin();
+		vector<tile *>::iterator tileIter = allTiles.begin();
 		for (; tileIter != allTiles.end(); tileIter++) {
 			(*tileIter)->draw();
-		}*/
-		leftTile.draw();
+		}
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

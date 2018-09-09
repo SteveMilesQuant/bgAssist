@@ -13,8 +13,7 @@ using namespace std;
 using namespace glm;
 
 // Constructor
-prismTop::prismTop() { prismTop(3); }
-prismTop::prismTop(int nSidesIn) {
+void prismTop::constructPrismTop(int nSidesIn){
 	nSides = (nSidesIn > 2) ? nSidesIn : 3;
 
 	// Initialize to regular scale, no translation, no rotation
@@ -30,6 +29,7 @@ prismTop::prismTop(int nSidesIn) {
 	ddsSideLoadedFlag = false;
 	copiedFaceImageFlag = false;
 	copiedSideImageFlag = false;
+	buffsPassedFlag = false;
 
 	faceVertexBufferData.clear();
 	faceUvBufferData.clear();
@@ -43,6 +43,10 @@ prismTop::prismTop(int nSidesIn) {
 	updateModelMatrixFlag = true;
 	updateMVPFlag = true;
 	timeMVPUpdated = 0;
+}
+prismTop::prismTop() { constructPrismTop(3); }
+prismTop::prismTop(int nSidesIn) {
+	constructPrismTop(nSidesIn);
 }
 
 // Copy constructor
@@ -64,6 +68,7 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 	copiedFaceImageFlag = true;
 	sideImageId = inPrismTop.sideImageId;
 	copiedSideImageFlag = true;
+	buffsPassedFlag = false;
 
 	// Let passBuffersToGLM generate the vertices
 	faceVertexBufferData.clear();
@@ -92,6 +97,8 @@ prismTop::~prismTop() {
 // uvStaticOrDynamic should be GL_DYNAMIC_DRAW if you wish to update
 //    the image on the face of the prism, or GL_STATIC_DRAW otherwise.
 void prismTop::passBuffersToGLM(GLuint uvStaticOrDynamicForFaceImage) {
+	if (buffsPassedFlag) return; // it doesn't do anything to pass the buffers twice
+
 	int nFaceCoordinates = nSides * 3;
 	faceVertexBufferData.reserve(nFaceCoordinates);
 	faceUvBufferData.reserve(nFaceCoordinates);
@@ -115,6 +122,8 @@ void prismTop::passBuffersToGLM(GLuint uvStaticOrDynamicForFaceImage) {
 	glGenBuffers(1, &sideUvBufferId);
 	glBindBuffer(GL_ARRAY_BUFFER, sideUvBufferId);
 	glBufferData(GL_ARRAY_BUFFER, sideUvBufferData.size() * sizeof(vec2), &sideUvBufferData[0], GL_STATIC_DRAW);
+
+	buffsPassedFlag = true;
 }
 
 

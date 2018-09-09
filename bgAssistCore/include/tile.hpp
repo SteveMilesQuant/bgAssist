@@ -17,8 +17,8 @@ class tile {
 public:
 
 	// Constructor, desctructor, copy constructor
-	tile(ivec2 inDimensions);
-	tile(ivec2 inDimensions, GLfloat inRelativeThickness);
+	tile(ivec2 inDimensions, GLboolean builderWorldFlag);
+	tile(ivec2 inDimensions, GLboolean builderWorldFlag, GLfloat inRelativeThickness);
 	~tile();
 	tile(const tile &inTile);
 
@@ -43,9 +43,12 @@ public:
 	list<token *> tokenList;
 
 private:
-	ivec2 dimensions;
+	ivec2 tileDimensions;
 	GLfloat relativeThickness;
 	prismTop rectPrism;
+
+	// Constructor
+	void constructTile(ivec2 inDimensions, GLboolean builderWorldFlag, GLfloat inRelativeThickness);
 };
 
 
