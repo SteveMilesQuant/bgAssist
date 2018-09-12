@@ -2,6 +2,7 @@
 #define BGASSIST_BUILDER_WORLD
 
 #include <tile.hpp>
+#include <token.hpp>
 #include <shader.hpp>
 
 #include <stdio.h>
@@ -84,10 +85,10 @@ int main(void)
 
 	// Create camera
 	timedMat4 Projection = timedMat4(glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f));
-	glm::mat4 View = glm::lookAt(
-		glm::vec3(0, -2.5, 3), // Camera location, in World Space
-		glm::vec3(0, 0, 0), // and looks at the origin
-		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
+	mat4 View = lookAt(
+		vec3(0, -2.5, 3), // Camera location, in World Space
+		vec3(0, 0, 0), // and looks at the origin
+		vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 	);
 	timedMat4 Camera = timedMat4(View);
 
@@ -96,28 +97,69 @@ int main(void)
 	Light.position = vec3(1, -5, 5);
 	Light.power = 60.0f;
 
+	// Create second camera for master/design tokens
+	mat4 View2 = lookAt(
+		vec3(0, 0, 1), // Camera location, in World Space
+		vec3(0, 0, 0), // and looks at the origin
+		vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
+	);
+	timedMat4 Camera2 = timedMat4(View2);
+
+	lightSource Light2;
+	Light2.position = vec3(0, 0, 12);
+	Light2.power = 100.0f;
+
+	// Find the upper right corner for camera2
+	vec3 origin, direction;
+	screenPosToWorldRay(
+		mode->width,
+		mode->height,
+		mode->width, mode->height,
+		Camera2.getMatrix(),
+		Projection.getMatrix(),
+		origin,
+		direction
+	);
+	// Camera ray's intersection with x-y plane
+	vec3 upperRightCorner2 = origin - origin.z / direction.z * direction;
+
 	// Paths to images
 	string imagePath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/test/images/";
 	string sideImagePath = imagePath + "cardboard_sides_BMP_DXT3_1.DDS";
 	string leftFaceImagePath = imagePath + "somethingWeird_BMP_DXT3_1.DDS";
 	string rightFaceImagePath = imagePath + "outdoorTile_BMP_DXT3_1.DDS";
+	string swordImagePath = imagePath + "sword_BMP_DXT3_1.DDS";
 
-	// TODO: create master token in upper right
-	tile leftTile(ivec2(1, 2), true);
+	// Create starting objects
+	tile leftTile(true, ivec2(1, 2));
 	leftTile.setProgramId(programID); 
 	leftTile.setCamera(&Camera);
 	leftTile.setProjection(&Projection);
 	leftTile.setLight(&Light);
-	leftTile.setAmbientRatio(0.2);
+	leftTile.setAmbientRatio(0.2f);
 	leftTile.loadFaceImage(leftFaceImagePath.c_str());
 	leftTile.loadSideImage(sideImagePath.c_str());
 	leftTile.setLocation(vec2(-0.5f,0.0f));
 	allTiles.push_back(&leftTile);
 
-	tile rightTile= leftTile;
+	tile rightTile = leftTile;
 	rightTile.loadFaceImage(rightFaceImagePath.c_str());
 	rightTile.setLocation(vec2(0.5f, 0.0f));
 	allTiles.push_back(&rightTile);
+
+	token masterToken(true, 6);
+	GLfloat masterTokenRadius = 1.0f/20.0f;
+	masterToken.setProgramId(programID);
+	masterToken.setCamera(&Camera2);
+	masterToken.setProjection(&Projection);
+	masterToken.setLight(&Light2);
+	masterToken.setAmbientRatio(0.2f);
+	masterToken.loadFaceImage(swordImagePath.c_str());
+	masterToken.loadSideImage(sideImagePath.c_str());
+	masterToken.setRotation(pi<GLfloat>() / 8.0f, vec3(-1.0f, 0.0f, 0.0f));
+	masterToken.setRadius(masterTokenRadius);
+	masterToken.setThickness(masterTokenRadius/10.f);
+	masterToken.setLocation(vec2(upperRightCorner2.x - 2.0f*masterTokenRadius, upperRightCorner2.y - 1.5f*masterTokenRadius));
 
 	do {
 
@@ -150,6 +192,7 @@ int main(void)
 				(*tokenIter)->draw();
 			}
 		}
+		masterToken.draw();
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

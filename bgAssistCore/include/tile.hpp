@@ -17,8 +17,8 @@ class tile {
 public:
 
 	// Constructor, desctructor, copy constructor
-	tile(ivec2 inDimensions, GLboolean builderWorldFlag);
-	tile(ivec2 inDimensions, GLboolean builderWorldFlag, GLfloat inRelativeThickness);
+	tile(GLboolean builderWorldFlag, ivec2 inDimensions);
+	tile(GLboolean builderWorldFlag, ivec2 inDimensions, GLfloat inRelativeThickness);
 	~tile();
 	tile(const tile &inTile);
 
@@ -50,7 +50,7 @@ private:
 	prismTop rectPrism;
 
 	// Constructor
-	void constructTile(ivec2 inDimensions, GLboolean builderWorldFlag, GLfloat inRelativeThickness);
+	void constructTile(GLboolean builderWorldFlag, ivec2 inDimensions, GLfloat inRelativeThickness);
 };
 
 

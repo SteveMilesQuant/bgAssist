@@ -13,7 +13,7 @@ namespace glm {
 		timedMat4(mat4 inMatrix) { setMatrix(inMatrix); }
 
 		void setMatrix(mat4 inMatrix) { matrix = inMatrix; noteTime(); }
-		mat4 getMatrix() { return matrix; }
+		const mat4 & getMatrix() { return matrix; }
 		double timeUpdated() { return timeWasUpdated; }
 
 	private:

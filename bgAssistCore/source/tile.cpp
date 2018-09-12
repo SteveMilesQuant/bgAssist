@@ -16,7 +16,7 @@ GLfloat getGlobalTileUnitLength() {
 
 // Constructors
 GLfloat defaultTileThickness = 5.0f;
-void tile::constructTile(ivec2 inDimensions, GLboolean builderWorldFlag, GLfloat inRelativeThickness) {
+void tile::constructTile(GLboolean builderWorldFlag, ivec2 inDimensions, GLfloat inRelativeThickness) {
 	ivec2 tmpDimensions = ivec2(max(inDimensions[0], 1), max(inDimensions[1], 1));
 	tileDimensions[0] = min(tmpDimensions[0], tmpDimensions[1]);
 	tileDimensions[1] = max(tmpDimensions[0], tmpDimensions[1]);
@@ -33,11 +33,11 @@ void tile::constructTile(ivec2 inDimensions, GLboolean builderWorldFlag, GLfloat
 	if (builderWorldFlag) rectPrism.passBuffersToGLM(GL_DYNAMIC_DRAW);
 	else rectPrism.passBuffersToGLM(GL_STATIC_DRAW);
 }
-tile::tile(ivec2 inDimensions, GLboolean builderWorldFlag) {
-	constructTile(inDimensions, builderWorldFlag, defaultTileThickness);
+tile::tile(GLboolean builderWorldFlag, ivec2 inDimensions) {
+	constructTile(builderWorldFlag, inDimensions, defaultTileThickness);
 }
-tile::tile(ivec2 inDimensions, GLboolean builderWorldFlag, GLfloat inRelativeThickness) {
-	constructTile(inDimensions, builderWorldFlag, inRelativeThickness);
+tile::tile(GLboolean builderWorldFlag, ivec2 inDimensions, GLfloat inRelativeThickness) {
+	constructTile(builderWorldFlag, inDimensions, inRelativeThickness);
 }
 
 
