@@ -56,6 +56,9 @@ public:
 
 	// Parent tile
 	tile * parentTile;
+
+	// Parent token
+	token * parentToken;
 private:
 	prismTop tokenPrism;
 	GLfloat thickness;

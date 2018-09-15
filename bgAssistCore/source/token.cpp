@@ -17,6 +17,7 @@ void token::constructToken(int inNSides, GLfloat inRelativeThickness, GLfloat in
 	tokenPrism.setUvCenter(vec2(0.5, 0.5));
 	tokenPrism.setUvScale(vec2(0.5, 0.5));
 	parentTile = NULL;
+	parentToken = NULL;
 }
 token::token() {
 	constructToken(3, defaultTokenThickness, defaultTokenRadius);

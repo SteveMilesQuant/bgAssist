@@ -118,16 +118,16 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 	timeMVPUpdated = 0;
 }
 
-// Desctuctor
+// Destructor
 prismTop::~prismTop() {
-	if (faceVertexBufferId >= 0) glDeleteBuffers(1, &faceVertexBufferId);
-	if (faceUvBufferId >= 0) glDeleteBuffers(1, &faceUvBufferId);
-	if (faceNormalBufferId >= 0) glDeleteBuffers(1, &faceNormalBufferId);
+	glDeleteBuffers(1, &faceVertexBufferId);
+	glDeleteBuffers(1, &faceUvBufferId);
+	glDeleteBuffers(1, &faceNormalBufferId);
 	if (!copiedFaceImageFlag) glDeleteTextures(1, &faceImageId);
 
-	if (sideVertexBufferId >= 0) glDeleteBuffers(1, &sideVertexBufferId);
-	if (sideUvBufferId >= 0) glDeleteBuffers(1, &sideUvBufferId);
-	if (sideNormalBufferId >= 0) glDeleteBuffers(1, &sideNormalBufferId);
+	glDeleteBuffers(1, &sideVertexBufferId);
+	glDeleteBuffers(1, &sideUvBufferId);
+	glDeleteBuffers(1, &sideNormalBufferId);
 	if (!copiedSideImageFlag) glDeleteTextures(1, &sideImageId);
 }
 

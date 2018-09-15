@@ -158,7 +158,7 @@ static void clickAction(GLFWwindow* window, int button, int action, int mods) {
 		if (origSelectedToken && origSelectedToken != selectedToken &&
 			origSelectedToken != &masterToken && !origSelectedToken->parentTile)
 		{
-			delete[] origSelectedToken;
+			delete origSelectedToken;
 			origSelectedToken = NULL;
 		}
 	}
@@ -172,15 +172,18 @@ static void clickAction(GLFWwindow* window, int button, int action, int mods) {
 }
 
 
-// On click and release, 
+// On click and release, open up a token for design
 static void masterTokenClickAction(GLFWwindow* window, int button, int action, int mods) {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
 		selectedToken = new token(masterToken);
 		selectedToken->passBuffersToGLM(true);
 		GLfloat masterTokenRadius = masterToken.getRadius();
-		selectedToken->setRadius(10.0f * masterTokenRadius);
-		selectedToken->setThickness(masterTokenRadius);
+		GLfloat masterTokenThickness = masterToken.getThickness();
+		GLfloat ratio = 6.5f;
+		selectedToken->setRadius(ratio * masterTokenRadius);
+		selectedToken->setThickness(ratio * masterTokenThickness);
 		selectedToken->setLocation(vec2(0, 0));
+		selectedToken->parentToken = &masterToken;
 	}
 }
 
@@ -235,7 +238,7 @@ int main(void)
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	// TODO: set callbacks
-	//glfwSetMouseButtonCallback(window, clickAction);
+	glfwSetMouseButtonCallback(window, clickAction);
 
 	// Initialize flags
 	GLboolean fullscreenFlag = false;
@@ -311,21 +314,20 @@ int main(void)
 	rightTile.setLocation(vec2(0.5f, 0.0f));
 	allTiles.push_back(&rightTile);
 
-	token masterToken2(6);
 	GLfloat masterTokenRadius = 1.0f/20.0f;
-	masterToken2.passBuffersToGLM(true);
-	// masterToken.setGlfwMouseButtonCallback(masterTokenClickAction);
-	masterToken2.setProgramId(programID);
-	masterToken2.setCamera(&Camera2);
-	masterToken2.setProjection(&Projection);
-	masterToken2.setLight(&Light2);
-	masterToken2.setAmbientRatio(0.2f);
-	masterToken2.loadFaceImage(swordImagePath.c_str());
-	masterToken2.loadSideImage(sideImagePath.c_str());
-	masterToken2.setRotation(pi<GLfloat>() / 8.0f, vec3(-1.0f, 0.0f, 0.0f));
-	masterToken2.setRadius(masterTokenRadius);
-	masterToken2.setThickness(masterTokenRadius/10.f);
-	masterToken2.setLocation(vec2(upperRightCorner2.x - 2.0f*masterTokenRadius, upperRightCorner2.y - 1.5f*masterTokenRadius));
+	masterToken.passBuffersToGLM(GL_DYNAMIC_DRAW);
+	masterToken.setGlfwMouseButtonCallback(masterTokenClickAction);
+	masterToken.setProgramId(programID);
+	masterToken.setCamera(&Camera2);
+	masterToken.setProjection(&Projection);
+	masterToken.setLight(&Light2);
+	masterToken.setAmbientRatio(0.2f);
+	masterToken.loadFaceImage(swordImagePath.c_str());
+	masterToken.loadSideImage(sideImagePath.c_str());
+	masterToken.setRotation(pi<GLfloat>() / 8.0f, vec3(-1.0f, 0.0f, 0.0f));
+	masterToken.setRadius(masterTokenRadius);
+	masterToken.setThickness(masterTokenRadius/10.f);
+	masterToken.setLocation(vec2(upperRightCorner2.x - 2.0f*masterTokenRadius, upperRightCorner2.y - 1.5f*masterTokenRadius));
 
 	do {
 
@@ -358,8 +360,8 @@ int main(void)
 				(*tokenIter)->draw();
 			}
 		}
-		masterToken2.draw();
-		//if (selectedToken) selectedToken->draw();
+		masterToken.draw();
+		if (selectedToken) selectedToken->draw();
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
