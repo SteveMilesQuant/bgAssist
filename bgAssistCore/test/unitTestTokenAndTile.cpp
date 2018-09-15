@@ -18,8 +18,171 @@ using namespace glm;
 
 #include <glfwExt.hpp>
 
+// Global objects
+token masterToken(6);
 class vector<tile *> allTiles;
+class tile * selectedTile = NULL;
+class token * selectedToken = NULL;
+struct pair<double, double> clickMousePos(-1.0, -1.0);
+GLboolean beginDragFlag = false;
 
+
+static GLboolean testTokenSelection(GLFWwindow* window, token * inToken) {
+	int screenWidth, screenHeight;
+	vec3 origin, direction;
+	float intersection_distance; 
+	
+	glfwGetWindowSize(window, &screenWidth, &screenHeight);
+
+	screenPosToWorldRay(
+		(int)clickMousePos.first,
+		screenHeight - (int)clickMousePos.second,
+		screenWidth, screenHeight,
+		inToken->getCamera().getMatrix(),
+		inToken->getProjection().getMatrix(),
+		origin,
+		direction
+	);
+
+	if (testRayOBBIntersection(
+		origin,
+		direction,
+		inToken->getMinCoords(),
+		inToken->getMaxCoords(),
+		inToken->getModelMatrix(),
+		intersection_distance)
+		)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+
+static tile * findSelectedTile(GLFWwindow* window) {
+	vector<tile *>::iterator tileIter = allTiles.begin();
+	int screenWidth, screenHeight;
+	vec3 origin, direction;
+	float intersection_distance;
+
+	glfwGetWindowSize(window, &screenWidth, &screenHeight);
+
+	screenPosToWorldRay(
+		(int)clickMousePos.first,
+		screenHeight - (int)clickMousePos.second,
+		screenWidth, screenHeight,
+		(*tileIter)->getCamera().getMatrix(),
+		(*tileIter)->getProjection().getMatrix(),
+		origin,
+		direction
+	);
+
+	for (; tileIter != allTiles.end(); tileIter++) {
+		if (!(*tileIter)) continue;
+		tile & currentTile = *(*tileIter);
+		if (testRayOBBIntersection(
+			origin,
+			direction,
+			currentTile.getMinCoords(),
+			currentTile.getMaxCoords(),
+			currentTile.getModelMatrix(),
+			intersection_distance)
+			)
+		{
+			return &currentTile;
+		}
+	}
+
+	return NULL;
+}
+
+
+static token * findSelectedToken(GLFWwindow* window) {
+	tile & firstTile = *(allTiles[0]);
+	int screenWidth, screenHeight;
+	vec3 origin, direction;
+	float intersection_distance;
+
+	glfwGetWindowSize(window, &screenWidth, &screenHeight);
+
+	screenPosToWorldRay(
+		(int)clickMousePos.first,
+		screenHeight - (int)clickMousePos.second,
+		screenWidth, screenHeight,
+		firstTile.getCamera().getMatrix(),
+		firstTile.getProjection().getMatrix(),
+		origin,
+		direction
+	);
+
+	// Find the current tile
+	tile * currentTileP = findSelectedTile(window);
+	if (!currentTileP) return NULL;
+	tile & currentTile = *currentTileP;
+
+	// Loop through tokens to find the current token
+	list<token *> & tokenList = currentTile.tokenList;
+	list<token *>::iterator tokenIter = tokenList.begin();
+	for (; tokenIter != tokenList.end(); tokenIter) {
+		if (!(*tokenIter)) continue;
+		token & currentToken = *(*tokenIter);
+		if (testRayOBBIntersection(
+			origin,
+			direction,
+			currentToken.getMinCoords(),
+			currentToken.getMaxCoords(),
+			currentToken.getModelMatrix(),
+			intersection_distance)
+			)
+		{
+			return &currentToken;
+		}
+	}
+
+	return NULL;
+}
+
+
+// Global callback for any mouse clicks
+static void clickAction(GLFWwindow* window, int button, int action, int mods) {
+	if (action == GLFW_PRESS) {
+		glfwGetCursorPos(window, &clickMousePos.first, &clickMousePos.second);
+		beginDragFlag = false;
+		token * origSelectedToken = selectedToken;
+		
+		if (testTokenSelection(window, &masterToken)) selectedToken = &masterToken;
+		else selectedToken = findSelectedToken(window);
+
+		// If we selected something else and the originally selected item is temporary, delete it
+		if (origSelectedToken && origSelectedToken != selectedToken &&
+			origSelectedToken != &masterToken && !origSelectedToken->parentTile)
+		{
+			delete[] origSelectedToken;
+			origSelectedToken = NULL;
+		}
+	}
+	else {
+		clickMousePos.first = -1.0;
+		clickMousePos.second = -1.0;
+	}
+
+	// If a token is selected, call its callback
+	if (selectedToken) selectedToken->callGlfwMouseButtonCallback(window, button, action, mods);
+}
+
+
+// On click and release, 
+static void masterTokenClickAction(GLFWwindow* window, int button, int action, int mods) {
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+		selectedToken = new token(masterToken);
+		selectedToken->passBuffersToGLM(true);
+		GLfloat masterTokenRadius = masterToken.getRadius();
+		selectedToken->setRadius(10.0f * masterTokenRadius);
+		selectedToken->setThickness(masterTokenRadius);
+		selectedToken->setLocation(vec2(0, 0));
+	}
+}
 
 
 int main(void)
@@ -72,6 +235,7 @@ int main(void)
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	// TODO: set callbacks
+	//glfwSetMouseButtonCallback(window, clickAction);
 
 	// Initialize flags
 	GLboolean fullscreenFlag = false;
@@ -147,19 +311,21 @@ int main(void)
 	rightTile.setLocation(vec2(0.5f, 0.0f));
 	allTiles.push_back(&rightTile);
 
-	token masterToken(true, 6);
+	token masterToken2(6);
 	GLfloat masterTokenRadius = 1.0f/20.0f;
-	masterToken.setProgramId(programID);
-	masterToken.setCamera(&Camera2);
-	masterToken.setProjection(&Projection);
-	masterToken.setLight(&Light2);
-	masterToken.setAmbientRatio(0.2f);
-	masterToken.loadFaceImage(swordImagePath.c_str());
-	masterToken.loadSideImage(sideImagePath.c_str());
-	masterToken.setRotation(pi<GLfloat>() / 8.0f, vec3(-1.0f, 0.0f, 0.0f));
-	masterToken.setRadius(masterTokenRadius);
-	masterToken.setThickness(masterTokenRadius/10.f);
-	masterToken.setLocation(vec2(upperRightCorner2.x - 2.0f*masterTokenRadius, upperRightCorner2.y - 1.5f*masterTokenRadius));
+	masterToken2.passBuffersToGLM(true);
+	// masterToken.setGlfwMouseButtonCallback(masterTokenClickAction);
+	masterToken2.setProgramId(programID);
+	masterToken2.setCamera(&Camera2);
+	masterToken2.setProjection(&Projection);
+	masterToken2.setLight(&Light2);
+	masterToken2.setAmbientRatio(0.2f);
+	masterToken2.loadFaceImage(swordImagePath.c_str());
+	masterToken2.loadSideImage(sideImagePath.c_str());
+	masterToken2.setRotation(pi<GLfloat>() / 8.0f, vec3(-1.0f, 0.0f, 0.0f));
+	masterToken2.setRadius(masterTokenRadius);
+	masterToken2.setThickness(masterTokenRadius/10.f);
+	masterToken2.setLocation(vec2(upperRightCorner2.x - 2.0f*masterTokenRadius, upperRightCorner2.y - 1.5f*masterTokenRadius));
 
 	do {
 
@@ -192,7 +358,8 @@ int main(void)
 				(*tokenIter)->draw();
 			}
 		}
-		masterToken.draw();
+		masterToken2.draw();
+		//if (selectedToken) selectedToken->draw();
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

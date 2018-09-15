@@ -40,6 +40,25 @@ void prismTop::constructPrismTop(int nSidesIn){
 	sideUvBufferData.clear();
 	sideNormalBufferData.clear();
 
+	programId = -1;
+	mvpId = -1;
+	textureId = -1;
+	modelMatrixId = -1;
+	viewMatrixId = -1;
+	lightPositionId = -1;
+	lightPowerId = -1;
+	lightColorId = -1;
+	ambientRatioId = -1;
+	specularRatioId = -1;
+
+	faceVertexBufferId = -1;
+	faceUvBufferId = -1;
+	faceNormalBufferId = -1;
+
+	sideVertexBufferId = -1;
+	sideUvBufferId = -1;
+	sideNormalBufferId = -1;
+
 	glfwMouseButtonCallback = NULL;
 	glfwCursorPosCallback = NULL;
 
@@ -101,14 +120,14 @@ prismTop::prismTop(const prismTop &inPrismTop) {
 
 // Desctuctor
 prismTop::~prismTop() {
-	glDeleteBuffers(1, &faceVertexBufferId);
-	glDeleteBuffers(1, &faceUvBufferId);
-	glDeleteBuffers(1, &faceNormalBufferId);
+	if (faceVertexBufferId >= 0) glDeleteBuffers(1, &faceVertexBufferId);
+	if (faceUvBufferId >= 0) glDeleteBuffers(1, &faceUvBufferId);
+	if (faceNormalBufferId >= 0) glDeleteBuffers(1, &faceNormalBufferId);
 	if (!copiedFaceImageFlag) glDeleteTextures(1, &faceImageId);
 
-	glDeleteBuffers(1, &sideVertexBufferId);
-	glDeleteBuffers(1, &sideUvBufferId);
-	glDeleteBuffers(1, &sideNormalBufferId);
+	if (sideVertexBufferId >= 0) glDeleteBuffers(1, &sideVertexBufferId);
+	if (sideUvBufferId >= 0) glDeleteBuffers(1, &sideUvBufferId);
+	if (sideNormalBufferId >= 0) glDeleteBuffers(1, &sideNormalBufferId);
 	if (!copiedSideImageFlag) glDeleteTextures(1, &sideImageId);
 }
 

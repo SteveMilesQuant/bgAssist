@@ -7,29 +7,28 @@ GLfloat defaultTokenRadius = 12.5f;
 GLfloat defaultTokenThickness = 2.0f;
 
 // Constructors
-void token::constructToken(GLboolean builderWorldFlag, int inNSides, GLfloat inRelativeThickness, GLfloat inRelativeRadius) {
+void token::constructToken(int inNSides, GLfloat inRelativeThickness, GLfloat inRelativeRadius) {
 	GLfloat unitLen = getGlobalTileUnitLength();
 	thickness = inRelativeThickness / unitLen;
 	radius = inRelativeRadius / unitLen;
-	tokenPrism = prismTop(inNSides);
+	tokenPrism.setNSides(inNSides);
 	tokenPrism.setScale(vec3(radius, radius, thickness));
 	setLocation(vec2(0, 0));
 	tokenPrism.setUvCenter(vec2(0.5, 0.5));
 	tokenPrism.setUvScale(vec2(0.5, 0.5));
 	parentTile = NULL;
-
-	// In the builder, we may move images around
-	if (builderWorldFlag) tokenPrism.passBuffersToGLM(GL_DYNAMIC_DRAW);
-	else tokenPrism.passBuffersToGLM(GL_STATIC_DRAW);
 }
-token::token(GLboolean builderWorldFlag, int inNSides) {
-	constructToken(builderWorldFlag, inNSides, defaultTokenThickness, defaultTokenRadius);
+token::token() {
+	constructToken(3, defaultTokenThickness, defaultTokenRadius);
 }
-token::token(GLboolean builderWorldFlag, int inNSides, GLfloat inRelativeThickness) {
-	constructToken(builderWorldFlag, inNSides, inRelativeThickness, defaultTokenRadius);
+token::token(int inNSides) {
+	constructToken(inNSides, defaultTokenThickness, defaultTokenRadius);
 }
-token::token(GLboolean builderWorldFlag, int inNSides, GLfloat inRelativeThickness, GLfloat inRelativeRadius) {
-	constructToken(builderWorldFlag, inNSides, inRelativeThickness, inRelativeRadius);
+token::token(int inNSides, GLfloat inRelativeThickness) {
+	constructToken(inNSides, inRelativeThickness, defaultTokenRadius);
+}
+token::token(int inNSides, GLfloat inRelativeThickness, GLfloat inRelativeRadius) {
+	constructToken(inNSides, inRelativeThickness, inRelativeRadius);
 }
 
 // Destructor
@@ -71,3 +70,5 @@ void token::setRadius(GLfloat inRadius) {
 void token::setLocation(vec2 location) {
 	tokenPrism.setTranslation(vec3(location, 0.5*thickness)); // bottom level with the xy plane
 }
+
+
