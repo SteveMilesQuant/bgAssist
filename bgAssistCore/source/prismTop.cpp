@@ -254,8 +254,9 @@ void prismTop::upateFaceImage() {
 
 // Copy face image uv vector from another prismTop
 void prismTop::copyFaceImageUvs(const prismTop &inPrismTop) {
-	if (nSides != inPrismTop.nSides || textureId != inPrismTop.textureId) return;
-	faceUvBufferData = inPrismTop.faceUvBufferData;
+	if (nSides != inPrismTop.nSides || textureId != inPrismTop.textureId || faceImageId != inPrismTop.faceImageId) return;
+	uvScale = inPrismTop.uvScale;
+	uvCenter = inPrismTop.uvCenter;
 	faceImageChangedFlag = true;
 }
 

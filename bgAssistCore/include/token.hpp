@@ -5,6 +5,9 @@
 #include <prismTop.hpp>
 #include <tile.hpp>
 
+#include <list>
+using namespace std;
+
 class tile;
 
 class token {
@@ -58,14 +61,13 @@ public:
 	void callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) { if (tokenPrism.glfwMouseButtonCallback) tokenPrism.glfwMouseButtonCallback(window, button, action, mods); }
 	void dragFaceImageBegin() { tokenPrism.dragFaceImageBegin(); }
 	void dragFaceImage(vec2 shiftFromStart) { tokenPrism.dragFaceImage(shiftFromStart); }
-	void copyFaceImageUvs(const token &inToken) { tokenPrism.copyFaceImageUvs(inToken.tokenPrism); }
+	void copyFaceImageUvs(const token &inToken);
 
+	// Public objects
+	tile * parentTile; // parent tile
+	token * parentToken; // parent token
+	list<token *> childTokens; // child tokens
 
-	// Parent tile
-	tile * parentTile;
-
-	// Parent token
-	token * parentToken;
 private:
 	GLfloat thickness;
 	GLfloat radius;

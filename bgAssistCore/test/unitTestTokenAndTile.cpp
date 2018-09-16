@@ -21,7 +21,6 @@ using namespace glm;
 // Global objects
 token masterToken(6);
 class vector<tile *> allTiles;
-class tile * selectedTile = NULL;
 class token * selectedToken = NULL;
 struct pair<double, double> clickMousePos(-1.0, -1.0);
 GLboolean beginDragFlag = false;
@@ -60,7 +59,7 @@ static GLboolean testTokenSelection(GLFWwindow* window, token * inToken) {
 }
 
 
-static tile * findSelectedTile(GLFWwindow* window) {
+static tile * findSelectedTile(GLFWwindow* window, double x, double y) {
 	vector<tile *>::iterator tileIter = allTiles.begin();
 	int screenWidth, screenHeight;
 	vec3 origin, direction;
@@ -69,8 +68,8 @@ static tile * findSelectedTile(GLFWwindow* window) {
 	glfwGetWindowSize(window, &screenWidth, &screenHeight);
 
 	screenPosToWorldRay(
-		(int)clickMousePos.first,
-		screenHeight - (int)clickMousePos.second,
+		(int)x,
+		screenHeight - (int)y,
 		screenWidth, screenHeight,
 		(*tileIter)->getCamera().getMatrix(),
 		(*tileIter)->getProjection().getMatrix(),
@@ -117,14 +116,14 @@ static token * findSelectedToken(GLFWwindow* window) {
 	);
 
 	// Find the current tile
-	tile * currentTileP = findSelectedTile(window);
+	tile * currentTileP = findSelectedTile(window, clickMousePos.first, clickMousePos.second);
 	if (!currentTileP) return NULL;
 	tile & currentTile = *currentTileP;
 
 	// Loop through tokens to find the current token
 	list<token *> & tokenList = currentTile.tokenList;
 	list<token *>::iterator tokenIter = tokenList.begin();
-	for (; tokenIter != tokenList.end(); tokenIter) {
+	for (; tokenIter != tokenList.end(); tokenIter++) {
 		if (!(*tokenIter)) continue;
 		token & currentToken = *(*tokenIter);
 		if (testRayOBBIntersection(
@@ -181,6 +180,54 @@ static void moveAction(GLFWwindow* window, double x, double y) {
 }
 
 
+// Map token callbacks
+// Deselect on release
+// Find location on drag
+static void mapTokenDeselect(GLFWwindow* window, int button, int action, int mods) {
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+		selectedToken = NULL;
+	}
+}
+static void mapTokenDragAction(GLFWwindow* window, double x, double y) {
+	if (!beginDragFlag || !selectedToken) return;
+
+	int screenWidth, screenHeight;
+	vec3 origin, direction;
+
+	glfwGetWindowSize(window, &screenWidth, &screenHeight);
+
+	screenPosToWorldRay(
+		(int)x,
+		screenHeight - (int)y,
+		screenWidth, screenHeight,
+		selectedToken->getCamera().getMatrix(),
+		selectedToken->getProjection().getMatrix(),
+		origin,
+		direction
+	);
+
+	tile * newParentTile = findSelectedTile(window, x, y);
+	if (!newParentTile) return;
+
+	GLfloat t = origin.z / direction.z;
+	vec3 newPosition = origin - t * direction;
+
+	selectedToken->setLocation(vec2(newPosition));
+	if (newParentTile != selectedToken->parentTile) {
+		list<token *> & tokenList = selectedToken->parentTile->tokenList;
+		list<token *>::iterator tokenIter = tokenList.begin();
+		for (; tokenIter != tokenList.end(); tokenIter++) {
+			if (*tokenIter == selectedToken) {
+				tokenList.erase(tokenIter);
+				break;
+			}
+		}
+		selectedToken->parentTile = newParentTile;
+		newParentTile->tokenList.push_back(selectedToken);
+	}
+}
+
+// Design token callbacks
 // Drag the face of the design image
 static void dragDesignTokenFaceImageBegin(GLFWwindow* window, int button, int action, int mods) {
 	if (clickMousePos.first < 0 || clickMousePos.second < 0 || selectedToken == NULL)
@@ -203,7 +250,9 @@ static void dragDesignTokenFaceImage(GLFWwindow* window, double x, double y)
 	selectedToken->dragFaceImage(shift);
 }
 
+// Master token callbacks
 // On click and release, open up a token for design
+// On click and drag, open up a token for 
 static void masterTokenClickAction(GLFWwindow* window, int button, int action, int mods) {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && !beginDragFlag) {
 		selectedToken = new token(masterToken);
@@ -217,6 +266,29 @@ static void masterTokenClickAction(GLFWwindow* window, int button, int action, i
 		selectedToken->parentToken = &masterToken;
 		selectedToken->setGlfwMouseButtonCallback(dragDesignTokenFaceImageBegin);
 		selectedToken->setGlfwCursorPosCallback(dragDesignTokenFaceImage);
+	}
+}
+static void masterTokenDragAction(GLFWwindow* window, double x, double y) {
+	if (!beginDragFlag) return;
+
+	tile * hoverTile = findSelectedTile(window, x, y);
+	if (hoverTile) {
+		selectedToken = new token(masterToken);
+		selectedToken->passBuffersToGLM(GL_DYNAMIC_DRAW);
+		selectedToken->setCamera(&hoverTile->getCamera());
+		selectedToken->setProjection(&hoverTile->getProjection());
+		selectedToken->setRelativeRadius(12.5f);
+		selectedToken->setRelativeThickness(2.0f);
+		selectedToken->setRotation(0.0f, vec3(1.0f, 0.0f, 0.0f));
+		selectedToken->parentTile = hoverTile;
+		hoverTile->tokenList.push_back(selectedToken);
+		selectedToken->parentToken = &masterToken;
+		masterToken.childTokens.push_back(selectedToken);
+
+		selectedToken->setGlfwMouseButtonCallback(mapTokenDeselect);
+		selectedToken->setGlfwCursorPosCallback(mapTokenDragAction);
+
+		selectedToken->callGlfwCursorPosCallback(window, x, y);
 	}
 }
 
@@ -355,6 +427,7 @@ int main(void)
 	GLfloat masterTokenRadius = 1.0f/20.0f;
 	masterToken.passBuffersToGLM(GL_DYNAMIC_DRAW);
 	masterToken.setGlfwMouseButtonCallback(masterTokenClickAction);
+	masterToken.setGlfwCursorPosCallback(masterTokenDragAction);
 	masterToken.setProgramId(programID);
 	masterToken.setCamera(&Camera2);
 	masterToken.setProjection(&Projection);
