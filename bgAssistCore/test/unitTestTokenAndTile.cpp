@@ -151,7 +151,8 @@ static void clickAction(GLFWwindow* window, int button, int action, int mods) {
 		beginDragFlag = false;
 		token * origSelectedToken = selectedToken;
 		
-		if (testTokenSelection(window, &masterToken)) selectedToken = &masterToken;
+		if (selectedToken && testTokenSelection(window, selectedToken)) selectedToken = selectedToken;
+		else if (testTokenSelection(window, &masterToken)) selectedToken = &masterToken;
 		else selectedToken = findSelectedToken(window);
 
 		// If we selected something else and the originally selected item is temporary, delete it
@@ -176,7 +177,7 @@ static void clickAction(GLFWwindow* window, int button, int action, int mods) {
 static void masterTokenClickAction(GLFWwindow* window, int button, int action, int mods) {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
 		selectedToken = new token(masterToken);
-		selectedToken->passBuffersToGLM(true);
+		selectedToken->passBuffersToGLM(GL_DYNAMIC_DRAW);
 		GLfloat masterTokenRadius = masterToken.getRadius();
 		GLfloat masterTokenThickness = masterToken.getThickness();
 		GLfloat ratio = 6.5f;
@@ -184,6 +185,7 @@ static void masterTokenClickAction(GLFWwindow* window, int button, int action, i
 		selectedToken->setThickness(ratio * masterTokenThickness);
 		selectedToken->setLocation(vec2(0, 0));
 		selectedToken->parentToken = &masterToken;
+		selectedToken->setGlfwMouseButtonCallback(NULL);
 	}
 }
 
@@ -298,7 +300,8 @@ int main(void)
 	string swordImagePath = imagePath + "sword_BMP_DXT3_1.DDS";
 
 	// Create starting objects
-	tile leftTile(true, ivec2(1, 2));
+	tile leftTile(ivec2(1, 2));
+	leftTile.passBuffersToGLM(GL_STATIC_DRAW);
 	leftTile.setProgramId(programID); 
 	leftTile.setCamera(&Camera);
 	leftTile.setProjection(&Projection);
@@ -310,6 +313,7 @@ int main(void)
 	allTiles.push_back(&leftTile);
 
 	tile rightTile = leftTile;
+	rightTile.passBuffersToGLM(GL_STATIC_DRAW);
 	rightTile.loadFaceImage(rightFaceImagePath.c_str());
 	rightTile.setLocation(vec2(0.5f, 0.0f));
 	allTiles.push_back(&rightTile);
@@ -361,7 +365,9 @@ int main(void)
 			}
 		}
 		masterToken.draw();
-		if (selectedToken) selectedToken->draw();
+		if (selectedToken && selectedToken != &masterToken && selectedToken->parentTile == NULL) {
+			selectedToken->draw();
+		}
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

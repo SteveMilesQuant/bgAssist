@@ -16,7 +16,9 @@ public:
 	token(int inNSides, GLfloat inRelativeThickness);
 	token(int inNSides, GLfloat inRelativeThickness, GLfloat inRelativeRadius);
 	~token();
-	token(const token & inToken);
+	token(const token & inToken) { copyToken(inToken); }
+	token(const token && inToken) { copyToken(inToken); }
+	token & operator = (const token & inToken) { copyToken(inToken); return *this; }
 
 	// Set relative thickness and radius
 	// Relative to getGlobalTileUnitLength() in tile.hpp
@@ -60,11 +62,12 @@ public:
 	// Parent token
 	token * parentToken;
 private:
-	prismTop tokenPrism;
 	GLfloat thickness;
 	GLfloat radius;
+	prismTop tokenPrism;
 
 	void constructToken(int inNSides, GLfloat inRelativeThickness, GLfloat inRelativeRadius);
+	void copyToken(const token & inToken);
 };
 
 

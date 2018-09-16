@@ -25,11 +25,10 @@ public:
 	// Desctructor
 	~prismTop();
 
-	// Copy constructor
-	prismTop(const prismTop &inPrismTop);
-
-	// How many triangles are in this object?
-	const int nTriangles() { return nSides * 3; }
+	// Copy constructors
+	prismTop(const prismTop & inPrismTop) { copyPrismTop(inPrismTop); }
+	prismTop(const prismTop && inPrismTop) { copyPrismTop(inPrismTop); }
+	prismTop & operator = (const prismTop & inPrismTop) { copyPrismTop(inPrismTop); return *this; }
 
 	// Setters and getters for transformations in the model matrix
 	void setNSides(int inNSides) { if (buffsPassedFlag) return; nSides = inNSides; }
@@ -82,7 +81,6 @@ private:
 	// Transformation information for the whole object
 	vec3 scaling;
 	vec3 translation;
-	vec3 startTranslation;
 	GLfloat rotationRadians;
 	vec3 rotationAxis;
 	timedMat4 *projection;
@@ -134,7 +132,7 @@ private:
 	GLuint sideNormalBufferId;
 	vector<vec3> sideNormalBufferData;
 
-	GLboolean buffsPassedFlag;
+	GLboolean buffsPassedFlag; // have we called passBuffersToGLM?
 
 	// Image IDs
 	GLuint faceImageId; // from loading the face image
@@ -156,6 +154,7 @@ private:
 
 	// Actual constructor function
 	void constructPrismTop(int nSidesIn);
+	void copyPrismTop(const prismTop & inPrismTop);
 };
 
 

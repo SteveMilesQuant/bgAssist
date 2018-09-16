@@ -38,10 +38,17 @@ token::~token() {
 }
 
 // Copy constructor
-token::token(const token &inToken) {
-	radius = inToken.radius;
-	thickness = inToken.thickness;
-	tokenPrism = inToken.tokenPrism;
+void token::copyToken(const token &inToken) {
+	if (this == &inToken) return;
+
+	// Public
+	this->parentTile = NULL; // don't copy parent tile - we'll find our own tile
+	this->parentToken = inToken.parentToken; // do copy parent token
+
+	// Private
+	this->thickness = inToken.thickness;
+	this->radius = inToken.radius;
+	this->tokenPrism = inToken.tokenPrism;
 }
 
 // Set relative thickness and radius

@@ -14,6 +14,11 @@ using namespace glm;
 
 // Constructor
 void prismTop::constructPrismTop(int nSidesIn){
+	// Public:
+	glfwMouseButtonCallback = NULL;
+	glfwCursorPosCallback = NULL;
+
+	// Private:
 	nSides = (nSidesIn > 2) ? nSidesIn : 3;
 
 	// Initialize to regular scale, no translation, no rotation
@@ -21,24 +26,17 @@ void prismTop::constructPrismTop(int nSidesIn){
 	translation = vec3(0.0f, 0.0f, 0.0f);
 	rotationRadians = 0.0f;
 	rotationAxis = vec3(1.0f, 0.0f, 0.0f);
-	uvScale = vec2(1, 1);
-	uvCenter = vec2(0, 0);
-	maxCoords = vec3(0, 0, 1);
-	minCoords = vec3(0, 0, -1);
-	ddsFaceLoadedFlag = false;
-	ddsSideLoadedFlag = false;
-	copiedFaceImageFlag = false;
-	copiedSideImageFlag = false;
-	buffsPassedFlag = false;
+	projection = NULL;
+	camera = NULL;
+	light = NULL;
 	ambientRatio = 0.1f;
 	specularRatio = 0.3f;
 
-	faceVertexBufferData.clear();
-	faceUvBufferData.clear();
-	faceNormalBufferData.clear();
-	sideVertexBufferData.clear();
-	sideUvBufferData.clear();
-	sideNormalBufferData.clear();
+	modelMatrix = mat4(1.0f);
+	MVP = mat4(1.0f);
+	updateModelMatrixFlag = true;
+	updateMVPFlag = true;
+	timeMVPUpdated = 0;
 
 	programId = -1;
 	mvpId = -1;
@@ -51,21 +49,36 @@ void prismTop::constructPrismTop(int nSidesIn){
 	ambientRatioId = -1;
 	specularRatioId = -1;
 
+	uvScale = vec2(1, 1);
+	uvCenter = vec2(0, 0);
+	startUvCenter = uvCenter;
+	faceImageChangedFlag = true;
+	ddsFaceLoadedFlag = false;
+	ddsSideLoadedFlag = false;
+	copiedFaceImageFlag = false;
+	copiedSideImageFlag = false;
+
 	faceVertexBufferId = -1;
 	faceUvBufferId = -1;
 	faceNormalBufferId = -1;
+	faceVertexBufferData.clear();
+	faceUvBufferData.clear();
+	faceNormalBufferData.clear();
 
 	sideVertexBufferId = -1;
 	sideUvBufferId = -1;
 	sideNormalBufferId = -1;
+	sideVertexBufferData.clear();
+	sideUvBufferData.clear();
+	sideNormalBufferData.clear();
 
-	glfwMouseButtonCallback = NULL;
-	glfwCursorPosCallback = NULL;
+	buffsPassedFlag = false;
 
-	faceImageChangedFlag = true;
-	updateModelMatrixFlag = true;
-	updateMVPFlag = true;
-	timeMVPUpdated = 0;
+	faceImageId = -1;
+	sideImageId = -1;
+
+	minCoords = vec3(0, 0, -1); 
+	maxCoords = vec3(0, 0, 1);
 }
 prismTop::prismTop() { constructPrismTop(3); }
 prismTop::prismTop(int nSidesIn) {
@@ -73,49 +86,75 @@ prismTop::prismTop(int nSidesIn) {
 }
 
 // Copy constructor
-prismTop::prismTop(const prismTop &inPrismTop) {
-	nSides = inPrismTop.nSides;
-	scaling = inPrismTop.scaling;
-	translation = inPrismTop.translation;
-	rotationRadians = inPrismTop.rotationRadians;
-	rotationAxis = inPrismTop.rotationAxis;
-	minCoords = inPrismTop.minCoords;
-	maxCoords = inPrismTop.maxCoords;
-	glfwMouseButtonCallback = inPrismTop.glfwMouseButtonCallback;
-	glfwCursorPosCallback = inPrismTop.glfwCursorPosCallback;
-	ddsFaceLoadedFlag = inPrismTop.ddsFaceLoadedFlag;
-	ddsSideLoadedFlag = inPrismTop.ddsSideLoadedFlag;
-	programId = inPrismTop.programId;
-	modelMatrixId = inPrismTop.modelMatrixId;
-	viewMatrixId = inPrismTop.viewMatrixId;
-	lightPositionId = inPrismTop.lightPositionId;
-	lightColorId = inPrismTop.lightColorId;
-	lightPowerId = inPrismTop.lightPowerId;
-	ambientRatioId = inPrismTop.ambientRatioId;
-	specularRatioId = inPrismTop.specularRatioId;
-	light = inPrismTop.light;
-	ambientRatio = inPrismTop.ambientRatio;
-	specularRatio = inPrismTop.specularRatio;
-	textureId = inPrismTop.textureId;
-	mvpId = inPrismTop.mvpId;
-	faceImageId = inPrismTop.faceImageId;
-	copiedFaceImageFlag = true;
-	sideImageId = inPrismTop.sideImageId;
-	copiedSideImageFlag = true;
-	buffsPassedFlag = false;
+void prismTop::copyPrismTop(const prismTop & inPrismTop) {
+	if (this == &inPrismTop) return;
+
+	// Public:
+	this->glfwMouseButtonCallback = inPrismTop.glfwMouseButtonCallback;
+	this->glfwCursorPosCallback = inPrismTop.glfwCursorPosCallback;
+
+	// Private:
+	this->nSides = inPrismTop.nSides;
+
+	this->scaling = inPrismTop.scaling;
+	this->translation = inPrismTop.translation;
+	this->rotationRadians = inPrismTop.rotationRadians;
+	this->rotationAxis = inPrismTop.rotationAxis;
+	this->projection = inPrismTop.projection;
+	this->camera = inPrismTop.camera;
+	this->light = inPrismTop.light;
+	this->ambientRatio = inPrismTop.ambientRatio;
+	this->specularRatio = inPrismTop.specularRatio;
+
+	this->modelMatrix = inPrismTop.modelMatrix;
+	this->MVP = inPrismTop.modelMatrix;
+	this->updateModelMatrixFlag = true;
+	this->updateMVPFlag = true;
+	this->timeMVPUpdated = 0;
+
+	this->programId = inPrismTop.programId;
+	this->mvpId = inPrismTop.mvpId;
+	this->textureId = inPrismTop.textureId;
+	this->modelMatrixId = inPrismTop.modelMatrixId;
+	this->viewMatrixId = inPrismTop.viewMatrixId;
+	this->lightPositionId = inPrismTop.lightPositionId;
+	this->lightPowerId = inPrismTop.lightPowerId;
+	this->lightColorId = inPrismTop.lightColorId;
+	this->ambientRatioId = inPrismTop.ambientRatioId;
+	this->specularRatioId = inPrismTop.specularRatioId;
+
+	this->uvScale = inPrismTop.uvScale;
+	this->uvCenter = inPrismTop.uvCenter;
+	this->startUvCenter = inPrismTop.startUvCenter; // doesn't need to be copied, but might as well
+	this->faceImageChangedFlag = true;
+	this->ddsFaceLoadedFlag = inPrismTop.ddsFaceLoadedFlag;
+	this->ddsSideLoadedFlag = inPrismTop.ddsSideLoadedFlag;
+	this->copiedFaceImageFlag = true;
+	this->copiedSideImageFlag = true;
 
 	// Let passBuffersToGLM generate the vertices
-	faceVertexBufferData.clear();
-	faceUvBufferData.clear();
-	faceNormalBufferData.clear();
-	sideVertexBufferData.clear();
-	sideUvBufferData.clear();
-	sideNormalBufferData.clear();
+	this->faceVertexBufferId = -1;
+	this->faceVertexBufferData.clear();
+	this->faceUvBufferId = -1;
+	this->faceUvBufferData.clear();
+	this->faceNormalBufferId = -1;
+	this->faceNormalBufferData.clear();
 
-	faceImageChangedFlag = true;
-	updateModelMatrixFlag = true;
-	updateMVPFlag = true;
-	timeMVPUpdated = 0;
+	this->sideVertexBufferId = -1;
+	this->sideVertexBufferData.clear();
+	this->sideUvBufferId = -1;
+	this->sideUvBufferData.clear();
+	this->sideNormalBufferId = -1;
+	this->sideNormalBufferData.clear();
+
+	this->buffsPassedFlag = false;
+
+	this->faceImageId = inPrismTop.faceImageId;
+	this->sideImageId = inPrismTop.sideImageId;
+
+	this->minCoords = inPrismTop.minCoords;
+	this->maxCoords = inPrismTop.maxCoords;
+
 }
 
 // Destructor

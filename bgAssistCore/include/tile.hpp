@@ -17,10 +17,12 @@ class tile {
 public:
 
 	// Constructor, desctructor, copy constructor
-	tile(GLboolean builderWorldFlag, ivec2 inDimensions);
-	tile(GLboolean builderWorldFlag, ivec2 inDimensions, GLfloat inRelativeThickness);
+	tile(ivec2 inDimensions);
+	tile(ivec2 inDimensions, GLfloat inRelativeThickness);
 	~tile();
-	tile(const tile &inTile);
+	tile(const tile & inTile) { copyTile(inTile); }
+	tile(const tile && inTile) { copyTile(inTile); }
+	tile & operator = (const tile & inTile) { copyTile(inTile); return *this; }
 
 	// Set location (in xy plane only)
 	void setLocation(vec2 location);
@@ -39,6 +41,7 @@ public:
 	vec3 & getMinCoords() { return rectPrism.getMinCoords(); }
 	vec2 & getUvScale() { return rectPrism.getUvScale(); }
 	vec2 & getUvCenter() { return rectPrism.getUvCenter(); }
+	void passBuffersToGLM(GLuint uvStaticOrDynamicForFaceImage) { rectPrism.passBuffersToGLM(uvStaticOrDynamicForFaceImage); }
 	void loadFaceImage(const char * imagepath) { rectPrism.loadFaceImage(imagepath, true); }
 	void loadSideImage(const char * imagepath) { rectPrism.loadSideImage(imagepath, true); }
 	void draw() { rectPrism.draw(); }
@@ -56,8 +59,9 @@ private:
 	GLfloat relativeThickness;
 	prismTop rectPrism;
 
-	// Constructor
-	void constructTile(GLboolean builderWorldFlag, ivec2 inDimensions, GLfloat inRelativeThickness);
+	// Constructor, copy constructor
+	void constructTile(ivec2 inDimensions, GLfloat inRelativeThickness);
+	void copyTile(const tile & inTile);
 };
 
 

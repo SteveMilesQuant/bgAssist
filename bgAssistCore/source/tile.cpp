@@ -16,7 +16,9 @@ GLfloat getGlobalTileUnitLength() {
 
 // Constructors
 GLfloat defaultTileThickness = 5.0f;
-void tile::constructTile(GLboolean builderWorldFlag, ivec2 inDimensions, GLfloat inRelativeThickness) {
+void tile::constructTile(ivec2 inDimensions, GLfloat inRelativeThickness) {
+	tokenList.clear();
+
 	ivec2 tmpDimensions = ivec2(max(inDimensions[0], 1), max(inDimensions[1], 1));
 	tileDimensions[0] = min(tmpDimensions[0], tmpDimensions[1]);
 	tileDimensions[1] = max(tmpDimensions[0], tmpDimensions[1]);
@@ -28,16 +30,12 @@ void tile::constructTile(GLboolean builderWorldFlag, ivec2 inDimensions, GLfloat
 	GLfloat scale = 1.0f/sqrt(2.0f);
 	rectPrism.setScale(vec3(scale*tileDimensions.x, scale*tileDimensions.y, 0.5f*relativeThickness / getGlobalTileUnitLength()));
 	rectPrism.setUvScale(vec2(scale, scale));
-
-	// In the builder, we may move images around
-	if (builderWorldFlag) rectPrism.passBuffersToGLM(GL_DYNAMIC_DRAW);
-	else rectPrism.passBuffersToGLM(GL_STATIC_DRAW);
 }
-tile::tile(GLboolean builderWorldFlag, ivec2 inDimensions) {
-	constructTile(builderWorldFlag, inDimensions, defaultTileThickness);
+tile::tile(ivec2 inDimensions) {
+	constructTile(inDimensions, defaultTileThickness);
 }
-tile::tile(GLboolean builderWorldFlag, ivec2 inDimensions, GLfloat inRelativeThickness) {
-	constructTile(builderWorldFlag, inDimensions, inRelativeThickness);
+tile::tile(ivec2 inDimensions, GLfloat inRelativeThickness) {
+	constructTile(inDimensions, inRelativeThickness);
 }
 
 
@@ -47,10 +45,16 @@ tile::~tile(){
 }
 
 // Copy constructor
-tile::tile(const tile &inTile) {
-	tileDimensions = inTile.tileDimensions;
-	rectPrism = inTile.rectPrism;
-	relativeThickness = inTile.relativeThickness;
+void tile::copyTile(const tile & inTile) {
+	if (this == &inTile) return;
+
+	// Public:
+	this->tokenList.clear(); // don't copy associated tokens - this is a new tile
+
+	// Private:
+	this->tileDimensions = inTile.tileDimensions;
+	this->relativeThickness = inTile.relativeThickness;
+	this->rectPrism = inTile.rectPrism;
 }
 
 // Set location (in xy plane only)
