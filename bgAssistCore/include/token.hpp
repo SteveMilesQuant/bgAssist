@@ -54,7 +54,12 @@ public:
 	void draw() { tokenPrism.draw(); }
 	void setGlfwCursorPosCallback(void(*inFunc)(GLFWwindow* window, double x, double y)) { tokenPrism.glfwCursorPosCallback = inFunc; }
 	void setGlfwMouseButtonCallback(void(*inFunc)(GLFWwindow* window, int button, int action, int mods)) { tokenPrism.glfwMouseButtonCallback = inFunc; }
-	void callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) { if (tokenPrism.glfwMouseButtonCallback) tokenPrism.glfwMouseButtonCallback(window, button, action, mods);  }
+	void callGlfwCursorPosCallback(GLFWwindow* window, double x, double y) { if (tokenPrism.glfwCursorPosCallback) tokenPrism.glfwCursorPosCallback(window, x, y);  }
+	void callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) { if (tokenPrism.glfwMouseButtonCallback) tokenPrism.glfwMouseButtonCallback(window, button, action, mods); }
+	void dragFaceImageBegin() { tokenPrism.dragFaceImageBegin(); }
+	void dragFaceImage(vec2 shiftFromStart) { tokenPrism.dragFaceImage(shiftFromStart); }
+	void copyFaceImageUvs(const token &inToken) { tokenPrism.copyFaceImageUvs(inToken.tokenPrism); }
+
 
 	// Parent tile
 	tile * parentTile;

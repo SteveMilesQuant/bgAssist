@@ -159,6 +159,7 @@ static void clickAction(GLFWwindow* window, int button, int action, int mods) {
 		if (origSelectedToken && origSelectedToken != selectedToken &&
 			origSelectedToken != &masterToken && !origSelectedToken->parentTile)
 		{
+			masterToken.copyFaceImageUvs(*origSelectedToken);
 			delete origSelectedToken;
 			origSelectedToken = NULL;
 		}
@@ -173,9 +174,38 @@ static void clickAction(GLFWwindow* window, int button, int action, int mods) {
 }
 
 
+// Global callback for mouse move
+static void moveAction(GLFWwindow* window, double x, double y) {
+	if (clickMousePos.first >= 0.0 && clickMousePos.second >= 0.0f) beginDragFlag = true;
+	if (selectedToken) selectedToken->callGlfwCursorPosCallback(window, x, y);
+}
+
+
+// Drag the face of the design image
+static void dragDesignTokenFaceImageBegin(GLFWwindow* window, int button, int action, int mods) {
+	if (clickMousePos.first < 0 || clickMousePos.second < 0 || selectedToken == NULL)
+		return;
+
+	selectedToken->dragFaceImageBegin();
+}
+static void dragDesignTokenFaceImage(GLFWwindow* window, double x, double y)
+{
+	vec2 shift;
+	int width, height;
+
+	if (clickMousePos.first < 0 || clickMousePos.second < 0 || selectedToken == NULL || !beginDragFlag)
+		return;
+
+	glfwGetWindowSize(window, &width, &height);
+	shift.x = (float)(clickMousePos.first - x) / width;
+	shift.y = (float)(y - clickMousePos.second) / height;
+
+	selectedToken->dragFaceImage(shift);
+}
+
 // On click and release, open up a token for design
 static void masterTokenClickAction(GLFWwindow* window, int button, int action, int mods) {
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && !beginDragFlag) {
 		selectedToken = new token(masterToken);
 		selectedToken->passBuffersToGLM(GL_DYNAMIC_DRAW);
 		GLfloat masterTokenRadius = masterToken.getRadius();
@@ -185,9 +215,12 @@ static void masterTokenClickAction(GLFWwindow* window, int button, int action, i
 		selectedToken->setThickness(ratio * masterTokenThickness);
 		selectedToken->setLocation(vec2(0, 0));
 		selectedToken->parentToken = &masterToken;
-		selectedToken->setGlfwMouseButtonCallback(NULL);
+		selectedToken->setGlfwMouseButtonCallback(dragDesignTokenFaceImageBegin);
+		selectedToken->setGlfwCursorPosCallback(dragDesignTokenFaceImage);
 	}
 }
+
+
 
 
 int main(void)
@@ -239,8 +272,9 @@ int main(void)
 	// Black background
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-	// TODO: set callbacks
+	// Set callbacks
 	glfwSetMouseButtonCallback(window, clickAction);
+	glfwSetCursorPosCallback(window, moveAction);
 
 	// Initialize flags
 	GLboolean fullscreenFlag = false;
