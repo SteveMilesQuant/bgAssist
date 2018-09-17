@@ -19,6 +19,7 @@ void token::constructToken(int inNSides, GLfloat inRelativeThickness, GLfloat in
 	parentTile = NULL;
 	parentToken = NULL;
 	childTokens.clear();
+	designTokenFlag = false;
 }
 token::token() {
 	constructToken(3, defaultTokenThickness, defaultTokenRadius);
@@ -35,7 +36,10 @@ token::token(int inNSides, GLfloat inRelativeThickness, GLfloat inRelativeRadius
 
 // Destructor
 token::~token() {
-	// Nothing to do right now
+	// If this is a design token, copy design points back to parent token before deleting it
+	if (designTokenFlag && parentToken) {
+		parentToken->copyFaceImageUvs(*this);
+	}
 }
 
 // Copy constructor
@@ -51,6 +55,7 @@ void token::copyToken(const token &inToken) {
 	this->thickness = inToken.thickness;
 	this->radius = inToken.radius;
 	this->tokenPrism = inToken.tokenPrism;
+	this->designTokenFlag = inToken.designTokenFlag;
 }
 
 // Set relative thickness and radius

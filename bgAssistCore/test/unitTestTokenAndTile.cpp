@@ -158,7 +158,6 @@ static void clickAction(GLFWwindow* window, int button, int action, int mods) {
 		if (origSelectedToken && origSelectedToken != selectedToken &&
 			origSelectedToken != &masterToken && !origSelectedToken->parentTile)
 		{
-			masterToken.copyFaceImageUvs(*origSelectedToken);
 			delete origSelectedToken;
 			origSelectedToken = NULL;
 		}
@@ -264,6 +263,7 @@ static void masterTokenClickAction(GLFWwindow* window, int button, int action, i
 		selectedToken->setThickness(ratio * masterTokenThickness);
 		selectedToken->setLocation(vec2(0, 0));
 		selectedToken->parentToken = &masterToken;
+		selectedToken->setDesignTokenFlag(true);
 		selectedToken->setGlfwMouseButtonCallback(dragDesignTokenFaceImageBegin);
 		selectedToken->setGlfwCursorPosCallback(dragDesignTokenFaceImage);
 	}

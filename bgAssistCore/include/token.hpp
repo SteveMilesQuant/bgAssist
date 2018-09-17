@@ -29,6 +29,7 @@ public:
 	void setRelativeRadius(GLfloat inRelativeRadius);
 	void setThickness(GLfloat inThickness);
 	void setRadius(GLfloat inRadius);
+	void setDesignTokenFlag(GLboolean inDesignTokenFlag) { designTokenFlag = inDesignTokenFlag; }
 	GLfloat getThickness() { return thickness; }
 	GLfloat getRadius() { return radius; }
 
@@ -72,6 +73,7 @@ private:
 	GLfloat thickness;
 	GLfloat radius;
 	prismTop tokenPrism;
+	GLboolean designTokenFlag;
 
 	void constructToken(int inNSides, GLfloat inRelativeThickness, GLfloat inRelativeRadius);
 	void copyToken(const token & inToken);
