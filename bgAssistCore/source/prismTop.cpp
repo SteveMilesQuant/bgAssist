@@ -19,7 +19,8 @@ void prismTop::constructPrismTop(int nSidesIn){
 	glfwCursorPosCallback = NULL;
 
 	// Private:
-	nSides = (nSidesIn > 2) ? nSidesIn : 3;
+	nSides = 0;
+	setNSides(nSidesIn);
 
 	// Initialize to regular scale, no translation, no rotation
 	scaling = vec3(1.0f, 1.0f, 1.0f);
@@ -57,7 +58,9 @@ void prismTop::constructPrismTop(int nSidesIn){
 	ddsSideLoadedFlag = false;
 	copiedFaceImageFlag = false;
 	copiedSideImageFlag = false;
+	faceImageTransientFlag = false;
 
+	/* Done in setNSides(nSidesIn); 
 	faceVertexBufferId = -1;
 	faceUvBufferId = -1;
 	faceNormalBufferId = -1;
@@ -72,7 +75,7 @@ void prismTop::constructPrismTop(int nSidesIn){
 	sideUvBufferData.clear();
 	sideNormalBufferData.clear();
 
-	buffsPassedFlag = false;
+	buffsPassedFlag = false;*/
 
 	faceImageId = -1;
 	sideImageId = -1;
@@ -94,7 +97,8 @@ void prismTop::copyPrismTop(const prismTop & inPrismTop) {
 	glfwCursorPosCallback = inPrismTop.glfwCursorPosCallback;
 
 	// Private:
-	nSides = inPrismTop.nSides;
+	nSides = 0;
+	setNSides(inPrismTop.nSides);
 
 	scaling = inPrismTop.scaling;
 	translation = inPrismTop.translation;
@@ -131,8 +135,9 @@ void prismTop::copyPrismTop(const prismTop & inPrismTop) {
 	ddsSideLoadedFlag = inPrismTop.ddsSideLoadedFlag;
 	copiedFaceImageFlag = true;
 	copiedSideImageFlag = true;
+	faceImageTransientFlag = inPrismTop.faceImageTransientFlag;
 
-	// Let passBuffersToGLM generate the vertices
+	/* Done in setNSides(nSidesIn);
 	faceVertexBufferId = -1;
 	faceVertexBufferData.clear();
 	faceUvBufferId = -1;
@@ -147,7 +152,7 @@ void prismTop::copyPrismTop(const prismTop & inPrismTop) {
 	sideNormalBufferId = -1;
 	sideNormalBufferData.clear();
 
-	buffsPassedFlag = false;
+	buffsPassedFlag = false;*/
 
 	faceImageId = inPrismTop.faceImageId;
 	sideImageId = inPrismTop.sideImageId;
@@ -170,11 +175,31 @@ prismTop::~prismTop() {
 	if (!copiedSideImageFlag) glDeleteTextures(1, &sideImageId);
 }
 
+// If the number of sides changes, we need to pass the buffers to GLM again
+void prismTop::setNSides(int inNSides) { 
+	if (nSides == inNSides) return;
+	
+	nSides = (inNSides > 2) ? inNSides : 3;
+
+	clearBuffers();
+}
+
+// If the face can be updated, allow updating it
+void prismTop::setFaceImageTransientFlag(GLboolean inFaceImageTransientFlag) { 
+	if (inFaceImageTransientFlag == faceImageTransientFlag) return;
+	
+	faceImageTransientFlag = inFaceImageTransientFlag;
+
+	clearBuffers();
+}
+
 // Pass the buffers to GLM only once: after you generate them
 // uvStaticOrDynamic should be GL_DYNAMIC_DRAW if you wish to update
 //    the image on the face of the prism, or GL_STATIC_DRAW otherwise.
-void prismTop::passBuffersToGLM(GLuint uvStaticOrDynamicForFaceImage) {
+void prismTop::passBuffersToGLM() {
 	if (buffsPassedFlag) return; // it doesn't do anything to pass the buffers twice
+
+	GLuint uvStaticOrDynamicForFaceImage = (faceImageTransientFlag) ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
 
 	int nFaceCoordinates = nSides * 3;
 	faceVertexBufferData.reserve(nFaceCoordinates);
@@ -211,6 +236,32 @@ void prismTop::passBuffersToGLM(GLuint uvStaticOrDynamicForFaceImage) {
 	buffsPassedFlag = true;
 }
 
+void prismTop::clearBuffers() {
+	if (buffsPassedFlag) {
+		glDeleteBuffers(1, &faceVertexBufferId);
+		glDeleteBuffers(1, &faceUvBufferId);
+		glDeleteBuffers(1, &faceNormalBufferId);
+		glDeleteBuffers(1, &sideVertexBufferId);
+		glDeleteBuffers(1, &sideUvBufferId);
+		glDeleteBuffers(1, &sideNormalBufferId);
+	}
+
+	faceVertexBufferId = -1;
+	faceVertexBufferData.clear();
+	faceUvBufferId = -1;
+	faceUvBufferData.clear();
+	faceNormalBufferId = -1;
+	faceNormalBufferData.clear();
+
+	sideVertexBufferId = -1;
+	sideVertexBufferData.clear();
+	sideUvBufferId = -1;
+	sideUvBufferData.clear();
+	sideNormalBufferId = -1;
+	sideNormalBufferData.clear();
+
+	buffsPassedFlag = false;
+}
 
 // Update the model matrix whenever you change the position of the object
 void prismTop::updateModelMatrix() { 
@@ -245,6 +296,10 @@ void prismTop::updateMVP() {
 void prismTop::upateFaceImage() {
 	if (!faceImageChangedFlag) return;
 
+	// Make sure we're allowed to upate the face
+	setFaceImageTransientFlag(true);
+	passBuffersToGLM();
+
 	int nCoordinates = nSides * 9;
 	fillVerticesAndUVs(true);
 	glBindBuffer(GL_ARRAY_BUFFER, faceUvBufferId);
@@ -264,6 +319,7 @@ void prismTop::copyFaceImageUvs(const prismTop &inPrismTop) {
 void prismTop::draw() {
 	// Update the image, model matrix and MVP
 	// These routines will check if this is needed
+	passBuffersToGLM();
 	upateFaceImage();
 	updateModelMatrix();
 	updateMVP();

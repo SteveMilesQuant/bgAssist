@@ -31,8 +31,9 @@ public:
 	prismTop & operator = (const prismTop & inPrismTop) { copyPrismTop(inPrismTop); return *this; }
 
 	// Setters and getters for transformations in the model matrix
-	void setNSides(int inNSides) { if (buffsPassedFlag) return; nSides = inNSides; }
+	void setNSides(int inNSides);
 	void setProgramId(GLuint inProgramId);
+	void setFaceImageTransientFlag(GLboolean inFaceImageTransientFlag);
 	void setScale(vec3 inScaling) { scaling = inScaling; updateModelMatrixFlag = true; }
 	void setTranslation(vec3 inTranslation) { translation = inTranslation; updateModelMatrixFlag = true; }
 	void setRotation(GLfloat inRadians, vec3 inAxis) { rotationRadians = inRadians;  rotationAxis = inAxis;  updateModelMatrixFlag = true; }
@@ -52,9 +53,6 @@ public:
 	vec3 & getMinCoords() { return minCoords; }
 	vec2 & getUvScale() { return uvScale; }
 	vec2 & getUvCenter() { return uvCenter; }
-
-	// Pass the buffers to GLM only once: after you generate them
-	void passBuffersToGLM(GLuint uvStaticOrDynamicForFaceImage);
 
 	// Image loaders (from opengl tutorial's texture and shader files)
 	void loadFaceImage(const char * imagepath, GLboolean ddsFormatFlag);
@@ -116,6 +114,7 @@ private:
 	GLboolean ddsSideLoadedFlag;
 	GLboolean copiedFaceImageFlag;
 	GLboolean copiedSideImageFlag;
+	GLboolean faceImageTransientFlag;
 
 	// Vertex, uv, and normal buffers
 	GLuint faceVertexBufferId;
@@ -141,6 +140,10 @@ private:
 	// For OBB, the minimum and maximum coordinates
 	vec3 minCoords;
 	vec3 maxCoords;
+
+	// Pass buffers to GLM
+	void passBuffersToGLM();
+	void clearBuffers();
 
 	// Fill vertices and uv coords
 	void fillVerticesAndUVs(GLboolean faceOnly);

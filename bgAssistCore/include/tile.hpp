@@ -41,7 +41,6 @@ public:
 	vec3 & getMinCoords() { return rectPrism.getMinCoords(); }
 	vec2 & getUvScale() { return rectPrism.getUvScale(); }
 	vec2 & getUvCenter() { return rectPrism.getUvCenter(); }
-	void passBuffersToGLM(GLuint uvStaticOrDynamicForFaceImage) { rectPrism.passBuffersToGLM(uvStaticOrDynamicForFaceImage); }
 	void loadFaceImage(const char * imagepath) { rectPrism.loadFaceImage(imagepath, true); }
 	void loadSideImage(const char * imagepath) { rectPrism.loadSideImage(imagepath, true); }
 	void draw() { rectPrism.draw(); }

@@ -39,6 +39,7 @@ public:
 	// Accessor functions to underlying prism
 	void setNSides(int inNSides) { tokenPrism.setNSides(inNSides); }
 	void setProgramId(GLuint inProgramId) { tokenPrism.setProgramId(inProgramId); }
+	void setFaceImageTransientFlag(GLboolean inFaceImageTransientFlag) { tokenPrism.setFaceImageTransientFlag(inFaceImageTransientFlag); }
 	void setCamera(timedMat4 *inCamera) { tokenPrism.setCamera(inCamera); }
 	void setProjection(timedMat4 *inProjection) { tokenPrism.setProjection(inProjection); }
 	void setLight(lightSource * inLight) { tokenPrism.setLight(inLight); }
@@ -52,7 +53,6 @@ public:
 	vec3 & getMinCoords() { return tokenPrism.getMinCoords(); }
 	vec2 & getUvScale() { return tokenPrism.getUvScale(); }
 	vec2 & getUvCenter() { return tokenPrism.getUvCenter(); }
-	void passBuffersToGLM(GLuint uvStaticOrDynamicForFaceImage) { tokenPrism.passBuffersToGLM(uvStaticOrDynamicForFaceImage); }
 	void loadFaceImage(const char * imagepath) { tokenPrism.loadFaceImage(imagepath, true); }
 	void loadSideImage(const char * imagepath) { tokenPrism.loadSideImage(imagepath, true); }
 	void draw() { tokenPrism.draw(); }

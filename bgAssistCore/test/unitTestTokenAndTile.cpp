@@ -255,7 +255,6 @@ static void dragDesignTokenFaceImage(GLFWwindow* window, double x, double y)
 static void masterTokenClickAction(GLFWwindow* window, int button, int action, int mods) {
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE && !beginDragFlag) {
 		selectedToken = new token(masterToken);
-		selectedToken->passBuffersToGLM(GL_DYNAMIC_DRAW);
 		GLfloat masterTokenRadius = masterToken.getRadius();
 		GLfloat masterTokenThickness = masterToken.getThickness();
 		GLfloat ratio = 6.5f;
@@ -274,7 +273,6 @@ static void masterTokenDragAction(GLFWwindow* window, double x, double y) {
 	tile * hoverTile = findSelectedTile(window, x, y);
 	if (hoverTile) {
 		selectedToken = new token(masterToken);
-		selectedToken->passBuffersToGLM(GL_DYNAMIC_DRAW);
 		selectedToken->setCamera(&hoverTile->getCamera());
 		selectedToken->setProjection(&hoverTile->getProjection());
 		selectedToken->setRelativeRadius(12.5f);
@@ -407,7 +405,6 @@ int main(void)
 
 	// Create starting objects
 	tile leftTile(ivec2(1, 2));
-	leftTile.passBuffersToGLM(GL_STATIC_DRAW);
 	leftTile.setProgramId(programID); 
 	leftTile.setCamera(&Camera);
 	leftTile.setProjection(&Projection);
@@ -419,13 +416,12 @@ int main(void)
 	allTiles.push_back(&leftTile);
 
 	tile rightTile = leftTile;
-	rightTile.passBuffersToGLM(GL_STATIC_DRAW);
 	rightTile.loadFaceImage(rightFaceImagePath.c_str());
 	rightTile.setLocation(vec2(0.5f, 0.0f));
 	allTiles.push_back(&rightTile);
 
 	GLfloat masterTokenRadius = 1.0f/20.0f;
-	masterToken.passBuffersToGLM(GL_DYNAMIC_DRAW);
+	masterToken.setFaceImageTransientFlag(true);
 	masterToken.setGlfwMouseButtonCallback(masterTokenClickAction);
 	masterToken.setGlfwCursorPosCallback(masterTokenDragAction);
 	masterToken.setProgramId(programID);

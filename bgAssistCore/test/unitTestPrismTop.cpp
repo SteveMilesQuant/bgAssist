@@ -226,7 +226,7 @@ int main(void)
 
 	// Hex prism
 	prismTop hexPrism(6);
-	hexPrism.passBuffersToGLM(GL_DYNAMIC_DRAW);
+	hexPrism.setFaceImageTransientFlag(true);
 	hexPrism.setProgramId(programID);
 	hexPrism.glfwCursorPosCallback = dragSelectedPrismImage;
 	hexPrism.glfwMouseButtonCallback = dragPrismImageBegin;
@@ -248,7 +248,6 @@ int main(void)
 
 	// Penta prism
 	prismTop pentaPrism(5);
-	pentaPrism.passBuffersToGLM(GL_STATIC_DRAW);
 	pentaPrism.setProgramId(programID);
 	pentaPrism.glfwCursorPosCallback = dragSelectedPrism;
 	pentaPrism.glfwMouseButtonCallback = NULL;
