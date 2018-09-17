@@ -38,6 +38,7 @@ token::token(int inNSides, GLfloat inRelativeThickness, GLfloat inRelativeRadius
 token::~token() {
 	// If this is a design token, copy design points back to parent token before deleting it
 	if (designTokenFlag && parentToken) {
+		parentToken->setNSides(tokenPrism.getNSides());
 		parentToken->copyFaceImageUvs(*this);
 	}
 
@@ -97,6 +98,16 @@ void token::copyFaceImageUvs(const token &inToken) {
 	list<token *>::iterator childTokensIter = childTokens.begin();
 	for (; childTokensIter != childTokens.end(); childTokensIter++) {
 		(*childTokensIter)->copyFaceImageUvs(inToken);
+	}
+}
+
+
+void token::setNSides(int inNSides) { 
+	tokenPrism.setNSides(inNSides);
+
+	list<token *>::iterator tokenIter = childTokens.begin();
+	for (; tokenIter != childTokens.end(); tokenIter++) {
+		(*tokenIter)->setNSides(inNSides);
 	}
 }
 

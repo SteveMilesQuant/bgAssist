@@ -44,6 +44,7 @@ public:
 	void setSpecularRatio(GLfloat inSpecularRatio) { specularRatio = max(inSpecularRatio, 0.0f); }
 	void setUvScale(vec2 uvScaleIn) { if (uvScaleIn == uvScale) return;  uvScale = uvScaleIn; faceImageChangedFlag = true; }
 	void setUvCenter(vec2 uvCenterIn) { if (uvCenterIn == uvCenter) return;  uvCenter = uvCenterIn; faceImageChangedFlag = true; }
+	int getNSides() { return nSides; }
 	vec3 getScale() { return scaling; }
 	vec3 getTranslation() { return translation; }
 	timedMat4 & getCamera() { return *camera; }

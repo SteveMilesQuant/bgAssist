@@ -45,7 +45,7 @@ public:
 	void setLocation(vec2 location);
 
 	// Accessor functions to underlying prism
-	void setNSides(int inNSides) { tokenPrism.setNSides(inNSides); }
+	void setNSides(int inNSides); // should also set sides for children
 	void setProgramId(GLuint inProgramId) { tokenPrism.setProgramId(inProgramId); }
 	void setFaceImageTransientFlag(GLboolean inFaceImageTransientFlag) { tokenPrism.setFaceImageTransientFlag(inFaceImageTransientFlag); }
 	void setCamera(timedMat4 *inCamera) { tokenPrism.setCamera(inCamera); }
@@ -69,7 +69,7 @@ public:
 	void setGlfwKeyCallback(void(*inFunc)(GLFWwindow* window, int key, int scancode, int action, int mods)) { tokenPrism.glfwKeyCallback = inFunc; }
 	void callGlfwCursorPosCallback(GLFWwindow* window, double x, double y) { if (tokenPrism.glfwCursorPosCallback) tokenPrism.glfwCursorPosCallback(window, x, y);  }
 	void callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) { if (tokenPrism.glfwMouseButtonCallback) tokenPrism.glfwMouseButtonCallback(window, button, action, mods); }
-	void callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) { if (tokenPrism.glfwMouseButtonCallback) tokenPrism.glfwKeyCallback(window, key, scancode, action, mods); }
+	void callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) { if (tokenPrism.glfwKeyCallback) tokenPrism.glfwKeyCallback(window, key, scancode, action, mods); }
 	void dragFaceImageBegin() { tokenPrism.dragFaceImageBegin(); }
 	void dragFaceImage(vec2 shiftFromStart) { tokenPrism.dragFaceImage(shiftFromStart); }
 	void copyFaceImageUvs(const token &inToken);

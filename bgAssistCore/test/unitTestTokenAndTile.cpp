@@ -225,6 +225,24 @@ static void dragDesignTokenFaceImage(GLFWwindow* window, double x, double y)
 
 	selectedToken->dragFaceImage(shift);
 }
+static void designTokenChangeNSides(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (!selectedToken || action != GLFW_PRESS) return;
+
+	int nSides = 0;
+
+	switch (key) {
+		case GLFW_KEY_3: nSides = 3; break;
+		case GLFW_KEY_4: nSides = 4; break;
+		case GLFW_KEY_5: nSides = 5; break;
+		case GLFW_KEY_6: nSides = 6; break;
+		case GLFW_KEY_7: nSides = 7; break;
+		case GLFW_KEY_8: nSides = 8; break;
+		case GLFW_KEY_9: nSides = 9; break;
+		default: nSides = 0; break;
+	}
+
+	if (nSides > 2) selectedToken->setNSides(nSides);
+}
 
 // Master token callbacks
 // On click and release, open up a token for design
@@ -240,6 +258,7 @@ static void masterTokenClickAction(GLFWwindow* window, int button, int action, i
 		selectedToken->setLocation(vec2(0, 0));
 		selectedToken->setParentToken(&masterToken);
 		selectedToken->setDesignTokenFlag(true);
+		selectedToken->setGlfwKeyCallback(designTokenChangeNSides);
 		selectedToken->setGlfwMouseButtonCallback(dragDesignTokenFaceImageBegin);
 		selectedToken->setGlfwCursorPosCallback(dragDesignTokenFaceImage);
 	}
