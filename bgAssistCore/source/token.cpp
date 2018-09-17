@@ -47,15 +47,15 @@ void token::copyToken(const token &inToken) {
 	if (this == &inToken) return;
 
 	// Public
-	this->parentTile = NULL; // don't copy parent tile - we'll find our own tile
-	this->parentToken = inToken.parentToken; // do copy parent token
+	parentTile = NULL; // don't copy parent tile - we'll find our own tile
+	parentToken = inToken.parentToken; // do copy parent token
 	childTokens.clear(); // don't copy children
 
 	// Private
-	this->thickness = inToken.thickness;
-	this->radius = inToken.radius;
-	this->tokenPrism = inToken.tokenPrism;
-	this->designTokenFlag = inToken.designTokenFlag;
+	thickness = inToken.thickness;
+	radius = inToken.radius;
+	tokenPrism = inToken.tokenPrism;
+	designTokenFlag = inToken.designTokenFlag;
 }
 
 // Set relative thickness and radius

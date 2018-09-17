@@ -49,12 +49,12 @@ void tile::copyTile(const tile & inTile) {
 	if (this == &inTile) return;
 
 	// Public:
-	this->tokenList.clear(); // don't copy associated tokens - this is a new tile
+	tokenList.clear(); // don't copy associated tokens - this is a new tile
 
 	// Private:
-	this->tileDimensions = inTile.tileDimensions;
-	this->relativeThickness = inTile.relativeThickness;
-	this->rectPrism = inTile.rectPrism;
+	tileDimensions = inTile.tileDimensions;
+	relativeThickness = inTile.relativeThickness;
+	rectPrism = inTile.rectPrism;
 }
 
 // Set location (in xy plane only)
