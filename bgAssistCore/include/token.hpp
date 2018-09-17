@@ -32,6 +32,14 @@ public:
 	void setDesignTokenFlag(GLboolean inDesignTokenFlag) { designTokenFlag = inDesignTokenFlag; }
 	GLfloat getThickness() { return thickness; }
 	GLfloat getRadius() { return radius; }
+	void setParentToken(token * inParent);
+	token * getParentToken() { return parentToken; }
+	void removeParentToken();
+	void setParentTile(tile * inParent);
+	tile * getParentTile() { return parentTile; }
+	void removeParentTile();
+	void addChild(token * inChild);
+	void removeChild(token * inChild);
 
 	// Set location (in xy plane only)
 	void setLocation(vec2 location);
@@ -58,18 +66,19 @@ public:
 	void draw() { tokenPrism.draw(); }
 	void setGlfwCursorPosCallback(void(*inFunc)(GLFWwindow* window, double x, double y)) { tokenPrism.glfwCursorPosCallback = inFunc; }
 	void setGlfwMouseButtonCallback(void(*inFunc)(GLFWwindow* window, int button, int action, int mods)) { tokenPrism.glfwMouseButtonCallback = inFunc; }
+	void setGlfwKeyCallback(void(*inFunc)(GLFWwindow* window, int key, int scancode, int action, int mods)) { tokenPrism.glfwKeyCallback = inFunc; }
 	void callGlfwCursorPosCallback(GLFWwindow* window, double x, double y) { if (tokenPrism.glfwCursorPosCallback) tokenPrism.glfwCursorPosCallback(window, x, y);  }
 	void callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) { if (tokenPrism.glfwMouseButtonCallback) tokenPrism.glfwMouseButtonCallback(window, button, action, mods); }
+	void callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) { if (tokenPrism.glfwMouseButtonCallback) tokenPrism.glfwKeyCallback(window, key, scancode, action, mods); }
 	void dragFaceImageBegin() { tokenPrism.dragFaceImageBegin(); }
 	void dragFaceImage(vec2 shiftFromStart) { tokenPrism.dragFaceImage(shiftFromStart); }
 	void copyFaceImageUvs(const token &inToken);
 
-	// Public objects
+private:
 	tile * parentTile; // parent tile
 	token * parentToken; // parent token
 	list<token *> childTokens; // child tokens
 
-private:
 	GLfloat thickness;
 	GLfloat radius;
 	prismTop tokenPrism;

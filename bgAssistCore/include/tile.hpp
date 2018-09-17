@@ -24,6 +24,10 @@ public:
 	tile(const tile && inTile) { copyTile(inTile); }
 	tile & operator = (const tile & inTile) { copyTile(inTile); return *this; }
 
+	void addChildToken(token * inChild);
+	void removeChildToken(token * inChild);
+	void drawChildTokens();
+
 	// Set location (in xy plane only)
 	void setLocation(vec2 location);
 
@@ -43,17 +47,17 @@ public:
 	vec2 & getUvCenter() { return rectPrism.getUvCenter(); }
 	void loadFaceImage(const char * imagepath) { rectPrism.loadFaceImage(imagepath, true); }
 	void loadSideImage(const char * imagepath) { rectPrism.loadSideImage(imagepath, true); }
-	void draw() { rectPrism.draw(); }
+	void draw() { rectPrism.draw(); drawChildTokens(); }
 	void setGlfwCursorPosCallback(void(*inFunc)(GLFWwindow* window, double x, double y)) { rectPrism.glfwCursorPosCallback = inFunc; }
 	void setGlfwMouseButtonCallback(void(*inFunc)(GLFWwindow* window, int button, int action, int mods)) { rectPrism.glfwMouseButtonCallback = inFunc; }
 
 	// Test ray intersection
 	GLboolean testRayOBBIntersection(vec3 ray_origin, vec3 ray_direction);
+	token * findChildRayIntersection(vec3 ray_origin, vec3 ray_direction);
 
-	// List of associated tokens
-	list<token *> tokenList;
 
 private:
+	list<token *> tokenList;
 	ivec2 tileDimensions;
 	GLfloat relativeThickness;
 	prismTop rectPrism;

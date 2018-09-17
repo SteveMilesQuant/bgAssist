@@ -40,6 +40,10 @@ token::~token() {
 	if (designTokenFlag && parentToken) {
 		parentToken->copyFaceImageUvs(*this);
 	}
+
+	// Remove from parents
+	removeParentToken();
+	removeParentTile();
 }
 
 // Copy constructor
@@ -94,6 +98,51 @@ void token::copyFaceImageUvs(const token &inToken) {
 	for (; childTokensIter != childTokens.end(); childTokensIter++) {
 		(*childTokensIter)->copyFaceImageUvs(inToken);
 	}
+}
+
+
+void token::setParentToken(token * inParent) {
+	if (parentToken == inParent) return;
+	removeParentToken();
+	parentToken = inParent;
+	if (parentToken) parentToken->addChild(this);
+}
+
+void token::removeParentToken() {
+	if (!parentToken) return;
+	parentToken->removeChild(this);
+	parentToken = NULL;
+}
+
+
+void token::setParentTile(tile * inParent) {
+	if (parentTile == inParent) return;
+	removeParentTile();
+	parentTile = inParent;
+	if (parentTile) parentTile->addChildToken(this);
+}
+
+void token::removeParentTile() {
+	if (!parentTile) return;
+	parentTile->removeChildToken(this);
+}
+
+
+void token::removeChild(token * inChild) {
+	list<token *>::iterator tokenIter = childTokens.begin();
+	for (; tokenIter != childTokens.end(); tokenIter++) {
+		if (*tokenIter == inChild) {
+			childTokens.erase(tokenIter);
+			break;
+		}
+	}
+}
+
+void token::addChild(token * inChild) {
+	if (!inChild) return;
+	removeChild(inChild);
+	inChild->setParentToken(this);
+	childTokens.push_back(inChild);
 }
 
 

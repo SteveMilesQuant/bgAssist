@@ -73,3 +73,51 @@ GLboolean tile::testRayOBBIntersection(vec3 ray_origin, vec3 ray_direction) {
 		intersection_distance);
 }
 
+token * tile::findChildRayIntersection(vec3 ray_origin, vec3 ray_direction) {
+	float intersection_distance; // unused
+
+	list<token *>::iterator tokenIter = tokenList.begin();
+	for (; tokenIter != tokenList.end(); tokenIter++) {
+		if (!(*tokenIter)) continue;
+		token & currentToken = *(*tokenIter);
+		if (::testRayOBBIntersection(
+			ray_origin,
+			ray_direction,
+			currentToken.getMinCoords(),
+			currentToken.getMaxCoords(),
+			currentToken.getModelMatrix(),
+			intersection_distance)
+			)
+		{
+			return &currentToken;
+		}
+	}
+
+	return NULL;
+}
+
+
+void tile::addChildToken(token * inChild) {
+	if (!inChild) return;
+	removeChildToken(inChild);
+	tokenList.push_back(inChild);
+}
+
+void tile::removeChildToken(token * inChild) {
+	list<token *>::iterator tokenIter = tokenList.begin();
+	for (; tokenIter != tokenList.end(); tokenIter++) {
+		if (*tokenIter == inChild) {
+			tokenList.erase(tokenIter);
+			break;
+		}
+	}
+}
+
+void tile::drawChildTokens() {
+	list<token *>::iterator tokenIter = tokenList.begin();
+	for (; tokenIter != tokenList.end(); tokenIter++) {
+		(*tokenIter)->draw();
+	}
+}
+
+

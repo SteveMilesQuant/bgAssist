@@ -72,6 +72,7 @@ public:
 	// Action function pointers
 	void (*glfwCursorPosCallback)(GLFWwindow* window, double x, double y);
 	void (*glfwMouseButtonCallback)(GLFWwindow* window, int button, int action, int mods);
+	void (*glfwKeyCallback)(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 private:
 	int nSides; // number of sides in the polygon

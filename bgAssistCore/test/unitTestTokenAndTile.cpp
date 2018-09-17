@@ -22,6 +22,7 @@ using namespace glm;
 token masterToken(6);
 class vector<tile *> allTiles;
 class token * selectedToken = NULL;
+class token * lastSelectedToken = NULL;
 struct pair<double, double> clickMousePos(-1.0, -1.0);
 GLboolean beginDragFlag = false;
 
@@ -80,14 +81,9 @@ static tile * findSelectedTile(GLFWwindow* window, double x, double y) {
 	for (; tileIter != allTiles.end(); tileIter++) {
 		if (!(*tileIter)) continue;
 		tile & currentTile = *(*tileIter);
-		if (testRayOBBIntersection(
+		if (currentTile.testRayOBBIntersection(
 			origin,
-			direction,
-			currentTile.getMinCoords(),
-			currentTile.getMaxCoords(),
-			currentTile.getModelMatrix(),
-			intersection_distance)
-			)
+			direction))
 		{
 			return &currentTile;
 		}
@@ -118,28 +114,7 @@ static token * findSelectedToken(GLFWwindow* window) {
 	// Find the current tile
 	tile * currentTileP = findSelectedTile(window, clickMousePos.first, clickMousePos.second);
 	if (!currentTileP) return NULL;
-	tile & currentTile = *currentTileP;
-
-	// Loop through tokens to find the current token
-	list<token *> & tokenList = currentTile.tokenList;
-	list<token *>::iterator tokenIter = tokenList.begin();
-	for (; tokenIter != tokenList.end(); tokenIter++) {
-		if (!(*tokenIter)) continue;
-		token & currentToken = *(*tokenIter);
-		if (testRayOBBIntersection(
-			origin,
-			direction,
-			currentToken.getMinCoords(),
-			currentToken.getMaxCoords(),
-			currentToken.getModelMatrix(),
-			intersection_distance)
-			)
-		{
-			return &currentToken;
-		}
-	}
-
-	return NULL;
+	else return currentTileP->findChildRayIntersection(origin, direction);
 }
 
 
@@ -156,7 +131,7 @@ static void clickAction(GLFWwindow* window, int button, int action, int mods) {
 
 		// If we selected something else and the originally selected item is temporary, delete it
 		if (origSelectedToken && origSelectedToken != selectedToken &&
-			origSelectedToken != &masterToken && !origSelectedToken->parentTile)
+			origSelectedToken != &masterToken && !origSelectedToken->getParentTile())
 		{
 			delete origSelectedToken;
 			origSelectedToken = NULL;
@@ -165,6 +140,7 @@ static void clickAction(GLFWwindow* window, int button, int action, int mods) {
 	else {
 		clickMousePos.first = -1.0;
 		clickMousePos.second = -1.0;
+		lastSelectedToken = selectedToken;
 	}
 
 	// If a token is selected, call its callback
@@ -176,6 +152,11 @@ static void clickAction(GLFWwindow* window, int button, int action, int mods) {
 static void moveAction(GLFWwindow* window, double x, double y) {
 	if (clickMousePos.first >= 0.0 && clickMousePos.second >= 0.0f) beginDragFlag = true;
 	if (selectedToken) selectedToken->callGlfwCursorPosCallback(window, x, y);
+}
+
+// Global callback for keystrokes
+static void keyAction(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (lastSelectedToken) lastSelectedToken->callGlfwKeyCallback(window, key, scancode, action, mods);
 }
 
 
@@ -212,17 +193,13 @@ static void mapTokenDragAction(GLFWwindow* window, double x, double y) {
 	vec3 newPosition = origin - t * direction;
 
 	selectedToken->setLocation(vec2(newPosition));
-	if (newParentTile != selectedToken->parentTile) {
-		list<token *> & tokenList = selectedToken->parentTile->tokenList;
-		list<token *>::iterator tokenIter = tokenList.begin();
-		for (; tokenIter != tokenList.end(); tokenIter++) {
-			if (*tokenIter == selectedToken) {
-				tokenList.erase(tokenIter);
-				break;
-			}
-		}
-		selectedToken->parentTile = newParentTile;
-		newParentTile->tokenList.push_back(selectedToken);
+	selectedToken->setParentTile(newParentTile);
+}
+static void mapTokenDelete(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (lastSelectedToken && (key == GLFW_KEY_DELETE || key == GLFW_KEY_BACKSPACE) && action == GLFW_PRESS) {
+		if (lastSelectedToken == selectedToken) selectedToken = NULL;
+		delete lastSelectedToken;
+		lastSelectedToken = NULL;
 	}
 }
 
@@ -261,7 +238,7 @@ static void masterTokenClickAction(GLFWwindow* window, int button, int action, i
 		selectedToken->setRadius(ratio * masterTokenRadius);
 		selectedToken->setThickness(ratio * masterTokenThickness);
 		selectedToken->setLocation(vec2(0, 0));
-		selectedToken->parentToken = &masterToken;
+		selectedToken->setParentToken(&masterToken);
 		selectedToken->setDesignTokenFlag(true);
 		selectedToken->setGlfwMouseButtonCallback(dragDesignTokenFaceImageBegin);
 		selectedToken->setGlfwCursorPosCallback(dragDesignTokenFaceImage);
@@ -278,13 +255,12 @@ static void masterTokenDragAction(GLFWwindow* window, double x, double y) {
 		selectedToken->setRelativeRadius(12.5f);
 		selectedToken->setRelativeThickness(2.0f);
 		selectedToken->setRotation(0.0f, vec3(1.0f, 0.0f, 0.0f));
-		selectedToken->parentTile = hoverTile;
-		hoverTile->tokenList.push_back(selectedToken);
-		selectedToken->parentToken = &masterToken;
-		masterToken.childTokens.push_back(selectedToken);
+		selectedToken->setParentTile(hoverTile);
+		selectedToken->setParentToken(&masterToken);
 
 		selectedToken->setGlfwMouseButtonCallback(mapTokenDeselect);
 		selectedToken->setGlfwCursorPosCallback(mapTokenDragAction);
+		selectedToken->setGlfwKeyCallback(mapTokenDelete);
 
 		selectedToken->callGlfwCursorPosCallback(window, x, y);
 	}
@@ -345,6 +321,7 @@ int main(void)
 	// Set callbacks
 	glfwSetMouseButtonCallback(window, clickAction);
 	glfwSetCursorPosCallback(window, moveAction);
+	glfwSetKeyCallback(window, keyAction);
 
 	// Initialize flags
 	GLboolean fullscreenFlag = false;
@@ -460,15 +437,10 @@ int main(void)
 		// Draw all objects
 		vector<tile *>::iterator tileIter = allTiles.begin();
 		for (; tileIter != allTiles.end(); tileIter++) {
-			(*tileIter)->draw();
-			list<token *> &tokenList = (*tileIter)->tokenList;
-			list<token *>::iterator tokenIter = tokenList.begin();
-			for (; tokenIter != tokenList.end(); tokenIter++) {
-				(*tokenIter)->draw();
-			}
+			(*tileIter)->draw(); // also draws children
 		}
 		masterToken.draw();
-		if (selectedToken && selectedToken != &masterToken && selectedToken->parentTile == NULL) {
+		if (selectedToken && selectedToken != &masterToken && selectedToken->getParentTile() == NULL) {
 			selectedToken->draw();
 		}
 
