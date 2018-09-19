@@ -417,7 +417,6 @@ int main(void)
 	allTiles.push_back(&rightTile);
 
 	GLfloat masterTokenRadius = 1.0f/20.0f;
-	masterToken.setFaceImageTransientFlag(true);
 	masterToken.setGlfwMouseButtonCallback(masterTokenClickAction);
 	masterToken.setGlfwCursorPosCallback(masterTokenDragAction);
 	masterToken.setProgramId(programID);

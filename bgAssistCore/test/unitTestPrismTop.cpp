@@ -226,7 +226,6 @@ int main(void)
 
 	// Hex prism
 	prismTop hexPrism(6);
-	hexPrism.setFaceImageTransientFlag(true);
 	hexPrism.setProgramId(programID);
 	hexPrism.glfwCursorPosCallback = dragSelectedPrismImage;
 	hexPrism.glfwMouseButtonCallback = dragPrismImageBegin;

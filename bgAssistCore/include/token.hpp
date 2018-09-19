@@ -47,7 +47,6 @@ public:
 	// Accessor functions to underlying prism
 	void setNSides(int inNSides); // should also set sides for children
 	void setProgramId(GLuint inProgramId) { tokenPrism.setProgramId(inProgramId); }
-	void setFaceImageTransientFlag(GLboolean inFaceImageTransientFlag) { tokenPrism.setFaceImageTransientFlag(inFaceImageTransientFlag); }
 	void setCamera(timedMat4 *inCamera) { tokenPrism.setCamera(inCamera); }
 	void setProjection(timedMat4 *inProjection) { tokenPrism.setProjection(inProjection); }
 	void setLight(lightSource * inLight) { tokenPrism.setLight(inLight); }

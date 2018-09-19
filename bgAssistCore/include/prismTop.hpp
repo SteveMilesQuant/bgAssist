@@ -33,7 +33,6 @@ public:
 	// Setters and getters for transformations in the model matrix
 	void setNSides(int inNSides);
 	void setProgramId(GLuint inProgramId);
-	void setFaceImageTransientFlag(GLboolean inFaceImageTransientFlag);
 	void setScale(vec3 inScaling) { scaling = inScaling; updateModelMatrixFlag = true; }
 	void setTranslation(vec3 inTranslation) { translation = inTranslation; updateModelMatrixFlag = true; }
 	void setRotation(GLfloat inRadians, vec3 inAxis) { rotationMatrix = rotate(inRadians, inAxis);  updateModelMatrixFlag = true; }

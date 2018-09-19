@@ -52,7 +52,7 @@ void prismTop::constructPrismTop(int nSidesIn){
 	uvScale = vec2(1, 1);
 	uvCenter = vec2(0, 0);
 	startUvCenter = uvCenter;
-	faceImageChangedFlag = true;
+	faceImageChangedFlag = false;
 	ddsFaceLoadedFlag = false;
 	ddsSideLoadedFlag = false;
 	copiedFaceImageFlag = false;
@@ -128,12 +128,12 @@ void prismTop::copyPrismTop(const prismTop & inPrismTop) {
 	uvScale = inPrismTop.uvScale;
 	uvCenter = inPrismTop.uvCenter;
 	startUvCenter = inPrismTop.startUvCenter; // doesn't need to be copied, but might as well
-	faceImageChangedFlag = true;
+	faceImageChangedFlag = false;
 	ddsFaceLoadedFlag = inPrismTop.ddsFaceLoadedFlag;
 	ddsSideLoadedFlag = inPrismTop.ddsSideLoadedFlag;
 	copiedFaceImageFlag = true;
 	copiedSideImageFlag = true;
-	faceImageTransientFlag = inPrismTop.faceImageTransientFlag;
+	faceImageTransientFlag = false;
 
 	/* Done in setNSides(nSidesIn);
 	faceVertexBufferId = -1;
@@ -182,19 +182,14 @@ void prismTop::setNSides(int inNSides) {
 	clearBuffers();
 }
 
-// If the face can be updated, allow updating it
-void prismTop::setFaceImageTransientFlag(GLboolean inFaceImageTransientFlag) { 
-	if (inFaceImageTransientFlag == faceImageTransientFlag) return;
-	
-	faceImageTransientFlag = inFaceImageTransientFlag;
-
-	clearBuffers();
-}
-
 // Pass the buffers to GLM only once: after you generate them
 // uvStaticOrDynamic should be GL_DYNAMIC_DRAW if you wish to update
 //    the image on the face of the prism, or GL_STATIC_DRAW otherwise.
 void prismTop::passBuffersToGLM() {
+	if (faceImageChangedFlag && !faceImageTransientFlag) {
+		buffsPassedFlag = false;
+		faceImageTransientFlag = true;
+	}
 	if (buffsPassedFlag) return; // it doesn't do anything to pass the buffers twice
 
 	GLuint uvStaticOrDynamicForFaceImage = (faceImageTransientFlag) ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
@@ -295,7 +290,6 @@ void prismTop::upateFaceImage() {
 	if (!faceImageChangedFlag) return;
 
 	// Make sure we're allowed to upate the face
-	setFaceImageTransientFlag(true);
 	passBuffersToGLM();
 
 	int nCoordinates = nSides * 9;
