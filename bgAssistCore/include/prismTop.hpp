@@ -36,7 +36,7 @@ public:
 	void setFaceImageTransientFlag(GLboolean inFaceImageTransientFlag);
 	void setScale(vec3 inScaling) { scaling = inScaling; updateModelMatrixFlag = true; }
 	void setTranslation(vec3 inTranslation) { translation = inTranslation; updateModelMatrixFlag = true; }
-	void setRotation(GLfloat inRadians, vec3 inAxis) { rotationRadians = inRadians;  rotationAxis = inAxis;  updateModelMatrixFlag = true; }
+	void setRotation(GLfloat inRadians, vec3 inAxis) { rotationMatrix = rotate(inRadians, inAxis);  updateModelMatrixFlag = true; }
 	void setCamera(timedMat4 *inCamera) { camera = inCamera; updateMVPFlag = true; }
 	void setProjection(timedMat4 *inProjection) { projection = inProjection; updateMVPFlag = true; }
 	void setLight(lightSource *inLight) { light = inLight; }
@@ -81,8 +81,7 @@ private:
 	// Transformation information for the whole object
 	vec3 scaling;
 	vec3 translation;
-	GLfloat rotationRadians;
-	vec3 rotationAxis;
+	mat4 rotationMatrix;
 	timedMat4 *projection;
 	timedMat4 *camera;
 	lightSource *light;

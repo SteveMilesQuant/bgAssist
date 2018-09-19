@@ -25,8 +25,7 @@ void prismTop::constructPrismTop(int nSidesIn){
 	// Initialize to regular scale, no translation, no rotation
 	scaling = vec3(1.0f, 1.0f, 1.0f);
 	translation = vec3(0.0f, 0.0f, 0.0f);
-	rotationRadians = 0.0f;
-	rotationAxis = vec3(1.0f, 0.0f, 0.0f);
+	rotationMatrix = mat4(1.0f);
 	projection = NULL;
 	camera = NULL;
 	light = NULL;
@@ -102,8 +101,7 @@ void prismTop::copyPrismTop(const prismTop & inPrismTop) {
 
 	scaling = inPrismTop.scaling;
 	translation = inPrismTop.translation;
-	rotationRadians = inPrismTop.rotationRadians;
-	rotationAxis = inPrismTop.rotationAxis;
+	rotationMatrix = inPrismTop.rotationMatrix;
 	projection = inPrismTop.projection;
 	camera = inPrismTop.camera;
 	light = inPrismTop.light;
@@ -266,7 +264,7 @@ void prismTop::clearBuffers() {
 // Update the model matrix whenever you change the position of the object
 void prismTop::updateModelMatrix() { 
 	if (!updateModelMatrixFlag) return;
-	modelMatrix = translate(mat4(), translation) * rotate(rotationRadians, rotationAxis) * scale(scaling);
+	modelMatrix = translate(mat4(), translation) * rotationMatrix * scale(scaling);
 	updateModelMatrixFlag = false;
 	updateMVPFlag = true;
 }
@@ -445,7 +443,10 @@ void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
 	vec3 faceCenter(0.0f, 0.0f, 1.0f);
 	vec3 zaxis(0.0f, 0.0f, 1.0f); // Rotate about z+
 	mat4x4 matRot = rotate(2.0f * pi<float>() / nSides, zaxis);
-	vec4 startPoint = rotate(pi<float>() / nSides, zaxis) * vec4(1, 0, 1, 0);
+
+	vec4 startPoint;
+	if (nSides % 2 == 0) startPoint = rotate(pi<float>() / nSides, zaxis) * vec4(1, 0, 1, 0);
+	else startPoint = vec4(0, 1, 1, 0);
 	vec4 thisPoint = startPoint;
 	vec4 nextPoint = matRot * thisPoint;
 
