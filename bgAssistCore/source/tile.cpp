@@ -80,15 +80,7 @@ token * tile::findChildRayIntersection(vec3 ray_origin, vec3 ray_direction) {
 	for (; tokenIter != tokenList.end(); tokenIter++) {
 		if (!(*tokenIter)) continue;
 		token & currentToken = *(*tokenIter);
-		if (::testRayOBBIntersection(
-			ray_origin,
-			ray_direction,
-			currentToken.getMinCoords(),
-			currentToken.getMaxCoords(),
-			currentToken.getModelMatrix(),
-			intersection_distance)
-			)
-		{
+		if (currentToken.testRayOBBIntersection(ray_origin, ray_direction)) {
 			return &currentToken;
 		}
 	}

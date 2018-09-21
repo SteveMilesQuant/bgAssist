@@ -27,63 +27,15 @@ struct pair<double, double> clickMousePos(-1.0, -1.0);
 GLboolean beginDragFlag = false;
 
 
-static GLboolean testTokenSelection(GLFWwindow* window, token * inToken) {
-	int screenWidth, screenHeight;
-	vec3 origin, direction;
-	float intersection_distance; 
-	
-	glfwGetWindowSize(window, &screenWidth, &screenHeight);
-
-	screenPosToWorldRay(
-		(int)clickMousePos.first,
-		screenHeight - (int)clickMousePos.second,
-		screenWidth, screenHeight,
-		inToken->getCamera().getMatrix(),
-		inToken->getProjection().getMatrix(),
-		origin,
-		direction
-	);
-
-	if (testRayOBBIntersection(
-		origin,
-		direction,
-		inToken->getMinCoords(),
-		inToken->getMaxCoords(),
-		inToken->getModelMatrix(),
-		intersection_distance)
-		)
-	{
-		return true;
-	}
-
-	return false;
-}
-
-
-static tile * findSelectedTile(GLFWwindow* window, double x, double y) {
+static tile * findSelectedTile(vec3 ray_origin, vec3 ray_direction) {
 	vector<tile *>::iterator tileIter = allTiles.begin();
-	int screenWidth, screenHeight;
-	vec3 origin, direction;
-	float intersection_distance;
-
-	glfwGetWindowSize(window, &screenWidth, &screenHeight);
-
-	screenPosToWorldRay(
-		(int)x,
-		screenHeight - (int)y,
-		screenWidth, screenHeight,
-		(*tileIter)->getCamera().getMatrix(),
-		(*tileIter)->getProjection().getMatrix(),
-		origin,
-		direction
-	);
 
 	for (; tileIter != allTiles.end(); tileIter++) {
 		if (!(*tileIter)) continue;
 		tile & currentTile = *(*tileIter);
 		if (currentTile.testRayOBBIntersection(
-			origin,
-			direction))
+			ray_origin,
+			ray_direction))
 		{
 			return &currentTile;
 		}
@@ -92,12 +44,31 @@ static tile * findSelectedTile(GLFWwindow* window, double x, double y) {
 	return NULL;
 }
 
+static tile * findSelectedTile(GLFWwindow* window, double x, double y) {
+	tile & firstTile = *(allTiles[0]);
+	int screenWidth, screenHeight;
+	vec3 origin, direction;
+
+	glfwGetWindowSize(window, &screenWidth, &screenHeight);
+
+	screenPosToWorldRay(
+		(int)x,
+		screenHeight - (int)y,
+		screenWidth, screenHeight,
+		firstTile.getCamera().getMatrix(),
+		firstTile.getProjection().getMatrix(),
+		origin,
+		direction
+	);
+
+	return findSelectedTile(origin, direction);
+}
+
 
 static token * findSelectedToken(GLFWwindow* window) {
 	tile & firstTile = *(allTiles[0]);
 	int screenWidth, screenHeight;
 	vec3 origin, direction;
-	float intersection_distance;
 
 	glfwGetWindowSize(window, &screenWidth, &screenHeight);
 
@@ -112,7 +83,7 @@ static token * findSelectedToken(GLFWwindow* window) {
 	);
 
 	// Find the current tile
-	tile * currentTileP = findSelectedTile(window, clickMousePos.first, clickMousePos.second);
+	tile * currentTileP = findSelectedTile(origin, direction);
 	if (!currentTileP) return NULL;
 	else return currentTileP->findChildRayIntersection(origin, direction);
 }
@@ -125,8 +96,13 @@ static void clickAction(GLFWwindow* window, int button, int action, int mods) {
 		beginDragFlag = false;
 		token * origSelectedToken = selectedToken;
 		
-		if (selectedToken && testTokenSelection(window, selectedToken)) selectedToken = selectedToken;
-		else if (testTokenSelection(window, &masterToken)) selectedToken = &masterToken;
+		if (selectedToken &&
+			selectedToken->testRayOBBIntersection(window, clickMousePos.first, clickMousePos.second)) {
+			selectedToken = selectedToken;
+		}
+		else if (masterToken.testRayOBBIntersection(window, clickMousePos.first, clickMousePos.second)) {
+			selectedToken = &masterToken;
+		}
 		else selectedToken = findSelectedToken(window);
 
 		// If we selected something else and the originally selected item is temporary, delete it
@@ -186,7 +162,7 @@ static void mapTokenDragAction(GLFWwindow* window, double x, double y) {
 		direction
 	);
 
-	tile * newParentTile = findSelectedTile(window, x, y);
+	tile * newParentTile = findSelectedTile(origin, direction);
 	if (!newParentTile) return;
 
 	GLfloat t = origin.z / direction.z;

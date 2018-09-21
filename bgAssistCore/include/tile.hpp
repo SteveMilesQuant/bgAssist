@@ -40,11 +40,6 @@ public:
 	void setSpecularRatio(GLfloat inSpecularRatio) { rectPrism.setSpecularRatio(inSpecularRatio); }
 	timedMat4 & getCamera() { return rectPrism.getCamera(); }
 	timedMat4 & getProjection() { return rectPrism.getProjection(); }
-	mat4 & getModelMatrix() { return rectPrism.getModelMatrix(); }
-	vec3 & getMaxCoords() { return rectPrism.getMaxCoords(); }
-	vec3 & getMinCoords() { return rectPrism.getMinCoords(); }
-	vec2 & getUvScale() { return rectPrism.getUvScale(); }
-	vec2 & getUvCenter() { return rectPrism.getUvCenter(); }
 	void loadFaceImage(const char * imagepath) { rectPrism.loadFaceImage(imagepath, true); }
 	void loadSideImage(const char * imagepath) { rectPrism.loadSideImage(imagepath, true); }
 	void draw() { rectPrism.draw(); drawChildTokens(); }

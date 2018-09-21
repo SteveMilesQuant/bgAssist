@@ -55,11 +55,6 @@ public:
 	void setRotation(GLfloat inRadians, vec3 inAxis) { tokenPrism.setRotation(inRadians, inAxis); }
 	timedMat4 & getCamera() { return tokenPrism.getCamera(); }
 	timedMat4 & getProjection() { return tokenPrism.getProjection(); }
-	mat4 & getModelMatrix() { return tokenPrism.getModelMatrix(); }
-	vec3 & getMaxCoords() { return tokenPrism.getMaxCoords(); }
-	vec3 & getMinCoords() { return tokenPrism.getMinCoords(); }
-	vec2 & getUvScale() { return tokenPrism.getUvScale(); }
-	vec2 & getUvCenter() { return tokenPrism.getUvCenter(); }
 	void loadFaceImage(const char * imagepath) { tokenPrism.loadFaceImage(imagepath, true); }
 	void loadSideImage(const char * imagepath) { tokenPrism.loadSideImage(imagepath, true); }
 	void draw() { tokenPrism.draw(); }
@@ -72,6 +67,10 @@ public:
 	void dragFaceImageBegin() { tokenPrism.dragFaceImageBegin(); }
 	void dragFaceImage(vec2 shiftFromStart) { tokenPrism.dragFaceImage(shiftFromStart); }
 	void copyFaceImageUvs(const token &inToken);
+
+	// Test ray intersection
+	GLboolean testRayOBBIntersection(GLFWwindow* window, double xpos, double ypos);
+	GLboolean testRayOBBIntersection(vec3 ray_origin, vec3 ray_direction);
 
 private:
 	tile * parentTile; // parent tile

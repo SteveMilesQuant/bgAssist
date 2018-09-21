@@ -112,6 +112,37 @@ void token::setNSides(int inNSides) {
 }
 
 
+// Test an intersection with a ray
+GLboolean token::testRayOBBIntersection(GLFWwindow* window, double xpos, double ypos) {
+	int screenWidth, screenHeight;
+	vec3 ray_origin, ray_direction;
+	float intersection_distance; // unused
+
+	glfwGetWindowSize(window, &screenWidth, &screenHeight);
+
+	screenPosToWorldRay(
+		(int)xpos,
+		screenHeight - (int)ypos,
+		screenWidth, screenHeight,
+		tokenPrism.getCamera().getMatrix(),
+		tokenPrism.getProjection().getMatrix(),
+		ray_origin,
+		ray_direction
+	);
+
+	return testRayOBBIntersection(ray_origin, ray_direction);
+}
+GLboolean token::testRayOBBIntersection(vec3 ray_origin, vec3 ray_direction) {
+	float intersection_distance; // unused
+	return ::testRayOBBIntersection(ray_origin,
+		ray_direction,
+		tokenPrism.getMinCoords(),
+		tokenPrism.getMaxCoords(),
+		tokenPrism.getModelMatrix(),
+		intersection_distance);
+}
+
+
 void token::setParentToken(token * inParent) {
 	if (parentToken == inParent) return;
 	removeParentToken();
