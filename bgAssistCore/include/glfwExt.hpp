@@ -1,10 +1,13 @@
 
-#ifndef GLFWEXT_HPP
-#define GLFWEXT_HPP
+#pragma once
 
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/gtx/transform.hpp>
 using namespace glm;
+
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 namespace glm {
 	class timedMat4 {
@@ -59,5 +62,5 @@ bool testRayOBBIntersection(
 	float& intersection_distance // Output : distance between ray_origin and the intersection with the OBB
 );
 
+void renderText(GLuint textBufferId, FT_Face face, const char *text, float x, float y, float sx, float sy);
 
-#endif

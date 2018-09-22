@@ -1,11 +1,33 @@
-https://stackoverflow.com/questions/1400654/how-do-i-put-my-opengl-app-into-fullscreen-mode
+https://en.wikibooks.org/wiki/OpenGL_Programming/Modern_OpenGL_Tutorial_Text_Rendering_01
 
-create tile class
-create token class
+
+
+
 create list of tokens class
 create drop down menu class
 create text box class
 find way to read typing and get fonts
 create unit test 2
 create builder world
+
+
+Get fonts from: www.fontsquirrel.com
+
+Visual Studio settings:
+    Include list:
+        C:\Users\Steve\Desktop\programming\freetype-windows-binaries-master\freetype-windows-binaries-master\include
+        C:\Users\Steve\Desktop\programming\bgAssist\bgAssistCore\include
+        C:\Users\Steve\Desktop\opengl_tutorial\ogl-master\external\glm-0.9.7.1
+        C:\Users\Steve\Desktop\programming\glfw-3.2.1.bin.WIN64\glfw-3.2.1.bin.WIN64\include
+        C:\Users\Steve\Desktop\opengl_tutorial\ogl-master\external\glew-1.13.0\include
+    Additional library directories:
+        C:\Users\Steve\Desktop\programming\bgAssist\bgAssistCore\test\lib
+    Additional dependencies:
+        bgAssistCore.lib
+        glew32.lib
+        glfw3.lib
+        opengl32.lib
+        freetype.lib
+    Add dll's to system path
+
 

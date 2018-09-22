@@ -1,6 +1,5 @@
 
-#ifndef TILE_HPP
-#define TILE_HPP
+#pragma once
 
 #include <prismTop.hpp>
 #include <token.hpp>
@@ -62,8 +61,4 @@ private:
 	void copyTile(const tile & inTile);
 };
 
-
-
-
-#endif
 

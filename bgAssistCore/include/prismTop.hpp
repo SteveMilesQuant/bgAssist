@@ -1,7 +1,6 @@
 
 
-#ifndef PRISMTOP_HPP
-#define PRISMTOP_HPP
+#pragma once
 
 #include <texture.hpp>
 #include <glfwExt.hpp>
@@ -160,7 +159,5 @@ private:
 	void copyPrismTop(const prismTop & inPrismTop);
 };
 
-
-#endif
 
 

@@ -1,0 +1,12 @@
+#version 330 core
+
+// Input vertex data, different for all executions of this shader.
+in vec4 vertexPositionAndUv;
+
+// Output data ; will be interpolated for each fragment.
+out vec2 texcoord;
+
+void main(void) {
+  gl_Position = vec4(vertexPositionAndUv.xy, 0, 1);
+  texcoord = vertexPositionAndUv.zw;
+}

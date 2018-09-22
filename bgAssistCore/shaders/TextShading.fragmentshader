@@ -1,0 +1,14 @@
+#version 330 core
+
+uniform sampler2D textShadingTexture;
+uniform vec4 textColor;
+
+// Interpolated values from the vertex shaders
+in vec2 texcoord;
+
+out vec4 color;
+
+void main(void) {
+  color = vec4(1, 1, 1, texture(textShadingTexture, texcoord).a) * textColor;
+}
+
