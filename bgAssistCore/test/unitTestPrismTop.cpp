@@ -204,9 +204,9 @@ int main(void)
 	GLuint programID = LoadShaders(vertexShaderPath.c_str(), fragmentShaderPath.c_str());
 
 	// Create camera and projection
-	timedMat4 Projection = timedMat4(perspective(radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f));
+	timedMat4 Projection = timedMat4(perspective(radians(60.0f), 4.0f / 3.0f, 0.1f, 100.0f));
 	glm::mat4 FrontView = glm::lookAt(
-		glm::vec3(0, -2, 6), // Camera location, in World Space
+		glm::vec3(0, -2, 5), // Camera location, in World Space
 		glm::vec3(0, 0, 0), // and looks at the origin
 		glm::vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 	);

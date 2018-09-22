@@ -329,9 +329,9 @@ int main(void)
 	GLuint programID = LoadShaders(vertexShaderPath.c_str(), fragmentShaderPath.c_str());
 
 	// Create camera
-	timedMat4 Projection = timedMat4(glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.0f));
+	timedMat4 Projection = timedMat4(glm::perspective(glm::radians(60.0f), 4.0f / 3.0f, 0.1f, 100.0f));
 	mat4 View = lookAt(
-		vec3(0, -2.5, 3), // Camera location, in World Space
+		vec3(0, -2, 2), // Camera location, in World Space
 		vec3(0, 0, 0), // and looks at the origin
 		vec3(0, 1, 0)  // Head is up (set to 0,-1,0 to look upside-down)
 	);
@@ -399,7 +399,7 @@ int main(void)
 	masterToken.setCamera(&Camera2);
 	masterToken.setProjection(&Projection);
 	masterToken.setLight(&Light2);
-	masterToken.setAmbientRatio(0.2f);
+	masterToken.setAmbientRatio(0.3f);
 	masterToken.loadFaceImage(swordImagePath.c_str());
 	masterToken.loadSideImage(sideImagePath.c_str());
 	masterToken.setRotation(pi<GLfloat>() / 8.0f, vec3(-1.0f, 0.0f, 0.0f));
