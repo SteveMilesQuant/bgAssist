@@ -204,10 +204,17 @@ bool testRayOBBIntersection(
 
 
 
-void renderText(GLuint textBufferId, FT_Face face, const char *text, float x, float y, float sx, float sy) {
+void renderText(GLuint vertexBufferId, GLuint uvBufferId, FT_Face face, const char *text, float x, float y, float sx, float sy) {
 	const char *p;
 	FT_GlyphSlot g = face->glyph;
-	vector<vec4> box;
+	vector<vec2> vertices;
+	vector<vec2> uvs;
+
+	uvs.clear();
+	uvs.push_back(vec2(0, 0));
+	uvs.push_back(vec2(1, 0));
+	uvs.push_back(vec2(0, 1));
+	uvs.push_back(vec2(1, 1));
 
 	GLuint tex;
 	glActiveTexture(GL_TEXTURE0);
@@ -226,7 +233,7 @@ void renderText(GLuint textBufferId, FT_Face face, const char *text, float x, fl
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	/* Set up the VBO for our vertex data */
-	//glBindBuffer(GL_ARRAY_BUFFER, textBufferId);
+	//glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
 
 	/* Loop through all characters */
 	for (p = text; *p; p++) {
@@ -243,17 +250,21 @@ void renderText(GLuint textBufferId, FT_Face face, const char *text, float x, fl
 		float w = g->bitmap.width * sx;
 		float h = g->bitmap.rows * sy;
 
-		box.clear();
-		box.push_back(vec4(x2, -y2, 0, 0));
-		box.push_back(vec4(x2 + w, -y2, 1, 0));
-		box.push_back(vec4(x2, -y2 - h, 0, 1));
-		box.push_back(vec4(x2 + w, -y2 - h, 1, 1));
+		vertices.clear();
+		vertices.push_back(vec2(x2, -y2));
+		vertices.push_back(vec2(x2 + w, -y2));
+		vertices.push_back(vec2(x2, -y2 - h));
+		vertices.push_back(vec2(x2 + w, -y2 - h));
 
 		/* Draw the character on the screen */
 		glEnableVertexAttribArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, textBufferId);
-		glBufferData(GL_ARRAY_BUFFER, box.size() * sizeof(vec4), &box[0], GL_DYNAMIC_DRAW);
-		glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vec2), &vertices[0], GL_DYNAMIC_DRAW);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(1);
+		glBindBuffer(GL_ARRAY_BUFFER, uvBufferId);
+		glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(vec2), &uvs[0], GL_DYNAMIC_DRAW);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 		/* Advance the cursor to the start of the next character */

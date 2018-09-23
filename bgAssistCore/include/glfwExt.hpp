@@ -62,5 +62,5 @@ bool testRayOBBIntersection(
 	float& intersection_distance // Output : distance between ray_origin and the intersection with the OBB
 );
 
-void renderText(GLuint textBufferId, FT_Face face, const char *text, float x, float y, float sx, float sy);
+void renderText(GLuint textBufferId, GLuint uvBufferId,FT_Face face, const char *text, float x, float y, float sx, float sy);
 

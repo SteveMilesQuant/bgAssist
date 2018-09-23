@@ -1,12 +1,13 @@
 #version 330 core
 
 // Input vertex data, different for all executions of this shader.
-in vec4 vertexPositionAndUv;
+layout(location = 0) in vec2 vertexPosition;
+layout(location = 1) in vec2 vertexUV;
 
 // Output data ; will be interpolated for each fragment.
-out vec2 texcoord;
+out vec2 UV;
 
-void main(void) {
-  gl_Position = vec4(vertexPositionAndUv.xy, 0, 1);
-  texcoord = vertexPositionAndUv.zw;
+void main() {
+  gl_Position = vec4(vertexPosition, 0, 1);
+  UV = vertexUV;
 }
