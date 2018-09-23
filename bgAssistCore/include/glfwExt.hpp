@@ -6,9 +6,6 @@
 #include <glm/gtx/transform.hpp>
 using namespace glm;
 
-#include <ft2build.h>
-#include FT_FREETYPE_H
-
 namespace glm {
 	class timedMat4 {
 	public:
@@ -62,5 +59,4 @@ bool testRayOBBIntersection(
 	float& intersection_distance // Output : distance between ray_origin and the intersection with the OBB
 );
 
-void renderText(GLuint textBufferId, GLuint uvBufferId,FT_Face face, const char *text, float x, float y, float sx, float sy);
 

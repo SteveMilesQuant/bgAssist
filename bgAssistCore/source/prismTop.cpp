@@ -377,7 +377,7 @@ void prismTop::draw() {
 	);
 
 	// Draw our object(s)
-	glDrawArrays(GL_TRIANGLES, 0, nSides * 3);
+	glDrawArrays(GL_TRIANGLE_FAN, 0, (GLsizei)faceVertexBufferData.size());
 
 	// DRAW SIDES
 	// Bind our texture in Texture Unit 0
@@ -422,7 +422,7 @@ void prismTop::draw() {
 	);
 
 	// Draw our object(s)
-	glDrawArrays(GL_TRIANGLES, 0, nSides * 6);
+	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)sideVertexBufferData.size());
 
 	// Disable vertex attributes
 	glDisableVertexAttribArray(0);
@@ -453,6 +453,16 @@ void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
 		sideUvBufferData.clear();
 		sideNormalBufferData.clear();
 	}
+
+	// Face is a fan, so it works a little differently
+	// Start with first two points, then every point thereafter creates a triangle
+	faceVertexBufferData.push_back(faceCenter);
+	faceUvBufferData.push_back(uvCenter);
+	faceNormalBufferData.push_back(zaxis);
+
+	faceVertexBufferData.push_back(vec3(thisPoint));
+	faceUvBufferData.push_back(vec2(thisPoint.x*uvScale.x, thisPoint.y*uvScale.y) + uvCenter);
+	faceNormalBufferData.push_back(zaxis);
 	
 	for (i = 0; i < nSides; i++) {
 		if (i == nSides - 1) nextPoint = startPoint;
@@ -465,17 +475,12 @@ void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
 
 		// Front triangle
 		// Make sure your triangles go clockwise by vertex (this tells us the front face)
-		faceVertexBufferData.push_back(faceCenter);
-		faceVertexBufferData.push_back(vec3(thisPoint));
 		faceVertexBufferData.push_back(vec3(nextPoint));
-		faceUvBufferData.push_back(uvCenter);
-		faceUvBufferData.push_back(vec2(thisPoint.x*uvScale.x, thisPoint.y*uvScale.y) + uvCenter);
 		faceUvBufferData.push_back(vec2(nextPoint.x*uvScale.x, nextPoint.y*uvScale.y) + uvCenter);
-		faceNormalBufferData.push_back(zaxis);
-		faceNormalBufferData.push_back(zaxis);
 		faceNormalBufferData.push_back(zaxis);
 		
 		// Sometimes we only update the face
+		// The sides can't be a strip because of the normals
 		if (!faceOnly) {
 			vec3 normal = normalize(vec3(thisPoint.x, thisPoint.y, 0) + vec3(thisPoint.x, thisPoint.y, 0));
 
@@ -510,12 +515,12 @@ void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
 
 	// DDS inverts the Y coordinates
 	if (ddsFaceLoadedFlag) {
-		for (i = 0; i < nSides*3; i++) {
+		for (i = 0; i < faceUvBufferData.size(); i++) {
 			faceUvBufferData[i].y = 1.0f - faceUvBufferData[i].y;
 		}
 	}
 	if (ddsSideLoadedFlag && !faceOnly) {
-		for (i = 0; i < nSides * 6; i++) {
+		for (i = 0; i < sideUvBufferData.size(); i++) {
 			sideUvBufferData[i].y = 1.0f - sideUvBufferData[i].y;
 		}
 	}

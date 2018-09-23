@@ -3,16 +3,10 @@
 
 #include <glfwExt.hpp>
 
-#include <vector>
-using namespace std;
-
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/gtx/transform.hpp>
 using namespace glm;
-
-#include <ft2build.h>
-#include FT_FREETYPE_H
 
 
 void screenPosToWorldRay(
@@ -202,78 +196,4 @@ bool testRayOBBIntersection(
 }
 
 
-
-
-void renderText(GLuint vertexBufferId, GLuint uvBufferId, FT_Face face, const char *text, float x, float y, float sx, float sy) {
-	const char *p;
-	FT_GlyphSlot g = face->glyph;
-	vector<vec2> vertices;
-	vector<vec2> uvs;
-
-	uvs.clear();
-	uvs.push_back(vec2(0, 0));
-	uvs.push_back(vec2(1, 0));
-	uvs.push_back(vec2(0, 1));
-	uvs.push_back(vec2(1, 1));
-
-	GLuint tex;
-	glActiveTexture(GL_TEXTURE0);
-	glGenTextures(1, &tex);
-	glBindTexture(GL_TEXTURE_2D, tex);
-
-	/* We require 1 byte alignment when uploading texture data */
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-	/* Clamping to edges is important to prevent artifacts when scaling */
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	/* Linear filtering usually looks best for text */
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	/* Set up the VBO for our vertex data */
-	//glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
-
-	/* Loop through all characters */
-	for (p = text; *p; p++) {
-		/* Try to load and render the character */
-		if (FT_Load_Char(face, *p, FT_LOAD_RENDER))
-			continue;
-
-		/* Upload the "bitmap", which contains an 8-bit grayscale image, as an alpha texture */
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, g->bitmap.width, g->bitmap.rows, 0, GL_ALPHA, GL_UNSIGNED_BYTE, g->bitmap.buffer);
-
-		/* Calculate the vertex and texture coordinates */
-		float x2 = x + g->bitmap_left * sx;
-		float y2 = -y - g->bitmap_top * sy;
-		float w = g->bitmap.width * sx;
-		float h = g->bitmap.rows * sy;
-
-		vertices.clear();
-		vertices.push_back(vec2(x2, -y2));
-		vertices.push_back(vec2(x2 + w, -y2));
-		vertices.push_back(vec2(x2, -y2 - h));
-		vertices.push_back(vec2(x2 + w, -y2 - h));
-
-		/* Draw the character on the screen */
-		glEnableVertexAttribArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
-		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vec2), &vertices[0], GL_DYNAMIC_DRAW);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray(1);
-		glBindBuffer(GL_ARRAY_BUFFER, uvBufferId);
-		glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(vec2), &uvs[0], GL_DYNAMIC_DRAW);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-		/* Advance the cursor to the start of the next character */
-		x += (g->advance.x >> 6) * sx;
-		y += (g->advance.y >> 6) * sy;
-	}
-
-	glDisableVertexAttribArray(0);
-	glDeleteTextures(1, &tex);
-
-}
 
