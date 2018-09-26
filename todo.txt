@@ -15,7 +15,6 @@ Get fonts from: www.fontsquirrel.com
 
 Visual Studio settings:
     Include list:
-        C:\Users\Steve\Desktop\programming\freetype-windows-binaries-master\freetype-windows-binaries-master\include
         C:\Users\Steve\Desktop\programming\bgAssist\bgAssistCore\include
         C:\Users\Steve\Desktop\opengl_tutorial\ogl-master\external\glm-0.9.7.1
         C:\Users\Steve\Desktop\programming\glfw-3.2.1.bin.WIN64\glfw-3.2.1.bin.WIN64\include
@@ -27,7 +26,6 @@ Visual Studio settings:
         glew32.lib
         glfw3.lib
         opengl32.lib
-        freetype.lib
     Add dll's to system path
 
 

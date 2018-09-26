@@ -1,8 +1,9 @@
 
-
-#include <shader.hpp>
 #include <glfwExt.hpp>
+#include <shader.hpp>
+#include <texture.hpp>
 
+#include <fstream>
 #include <string>
 #include <vector>
 using namespace std;
@@ -12,10 +13,57 @@ using namespace std;
 #include <glm/gtx/transform.hpp>
 using namespace glm;
 
-/*
-#include <ft2build.h>
-#include FT_FREETYPE_H
-*/
+
+void loadFontMeta(const char * csvPath, int & outWidth, vector<float> &outCellWidths) {
+	int width = 0, height = 0;
+	ifstream file(csvPath, ifstream::in);
+
+	outCellWidths.clear();
+
+	if (file.is_open()) {
+		GLboolean firstArgFlag = true;
+		GLboolean spaceReservedFlag = false;
+		string argName, argValueString;
+		int imageWidth(0), imageHeight(0), cellWidth(0), cellHeight(0);
+		float fontHeight(0);
+
+		while (!file.eof()) {
+			char delim = (firstArgFlag) ? ',' : '\n';
+
+			if (firstArgFlag) {
+				getline(file, argName, delim);
+			}
+			else {
+				getline(file, argValueString, delim);
+				if (argName == "Image Width") imageWidth = stoi(argValueString);
+				else if (argName == "Image Height") imageHeight = stoi(argValueString);
+				else if (argName == "Cell Width") cellWidth = stoi(argValueString);
+				else if (argName == "Cell Height") cellHeight = stoi(argValueString);
+				else if (argName == "Font Height") fontHeight = stoi(argValueString);
+				else if (argName.find("Base Width") < argName.npos) {
+					int endIdx = argName.find(' ', 5);
+					string charIdxString = argName.substr(5, endIdx-5);
+					int charIdx = stoi(charIdxString);
+					outCellWidths[charIdx] = (float) stoi(argValueString) / fontHeight;
+				}
+			}
+
+			if (width == 0 && imageWidth > 0 && cellWidth > 0) width = imageWidth / cellWidth;
+			if (height == 0 && imageHeight > 0 && cellHeight > 0) height = imageHeight / cellHeight;
+
+			if (!spaceReservedFlag && width > 0 && height > 0) {
+				outCellWidths.resize(width*height);
+				spaceReservedFlag = true;
+			}
+
+			firstArgFlag = !firstArgFlag;
+		}
+	}
+	file.close();
+
+	outWidth = width;
+}
+
 
 int main(void)
 {
@@ -73,20 +121,6 @@ int main(void)
 	string fragmentShaderPath = shaderPath + "TextShading.fragmentshader";
 	GLuint textProgramId = LoadShaders(vertexShaderPath.c_str(), fragmentShaderPath.c_str());
 
-	// Initialize freetype
-	FT_Library ft;
-	if (FT_Init_FreeType(&ft)) {
-		fprintf(stderr, "Could not init freetype library\n");
-		return 1;
-	}
-
-	string fontPath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/fonts/";
-	string freeSansFontPath = fontPath + "FreeSans.ttf";
-	FT_Face face;
-	if (FT_New_Face(ft, freeSansFontPath.c_str(), 0, &face)) {
-		fprintf(stderr, "Could not open font\n");
-		return 1;
-	}
 
 	GLuint textureId = glGetUniformLocation(textProgramId, "textShadingTexture");
 	GLuint textColorId = glGetUniformLocation(textProgramId, "textColor");
@@ -94,10 +128,19 @@ int main(void)
 	GLuint vertexBufferId, uvBufferId;
 	GLuint textImageId;
 
+	string fontPath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/fonts/";
+	string testFont = fontPath + "MalgunGothic_BMP_DXT3_1.DDS";
+	textImageId = loadDDS(testFont.c_str());
+
+	int fontImageWidth, fontImageHeight;
+	vector<float> charWidths;
+	string fontMethPath = fontPath + "MalgunGothic.csv";
+	loadFontMeta(fontMethPath.c_str(), fontImageWidth, charWidths);
+	fontImageHeight = charWidths.size() / fontImageWidth;
+
 	int screenWidth, screenHeight;
 	glfwGetWindowSize(window, &screenWidth, &screenHeight);
-	float sx = 2.0f / screenWidth;
-	float sy = 2.0f / screenHeight;
+	float fontHeight = 48.0f * 2.0f / screenWidth;
 
 	GLboolean buffersPassedFlag = false;
 
@@ -106,54 +149,33 @@ int main(void)
 
 	vec4 red( 1, 0, 0, 1 );
 
+	int writeLetter = (int) 'd';
+
 	do {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(textProgramId);
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		FT_Set_Pixel_Sizes(face, 0, 48);
 
 		if (!buffersPassedFlag) {
-			if (FT_Load_Char(face, 'C', FT_LOAD_RENDER)) {
-				fprintf(stderr, "Could not load letter.\n");
-				return 1;
-			}
+			int imageRow = writeLetter / fontImageWidth;
+			int imageCol = writeLetter % fontImageWidth;
+			float charWidth = charWidths[writeLetter] * fontHeight;
 
-			FT_GlyphSlot g = face->glyph;
-
-			glActiveTexture(GL_TEXTURE0); // might not need
-			glGenTextures(1, &textImageId);
-			glBindTexture(GL_TEXTURE_2D, textImageId);
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-			//glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, g->bitmap.width, g->bitmap.rows, 0, GL_ALPHA, GL_UNSIGNED_BYTE, g->bitmap.buffer);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, g->bitmap.width, g->bitmap.rows, 0, GL_BGR, GL_UNSIGNED_BYTE, g->bitmap.buffer);
-
-			float x = -1 + 8 * sx;
-			float y = 1 - 50 * sy;
-
-			float x2 = x + g->bitmap_left * sx;
-			float y2 = -y - g->bitmap_top * sy;
-			float w = g->bitmap.width * sx;
-			float h = g->bitmap.rows * sy;
-
+			vec2 uvUpperLeft((float)imageCol / fontImageWidth, (float) imageRow / fontImageHeight);
 			uvs.clear();
-			uvs.push_back(vec2(0, 0));
-			uvs.push_back(vec2(1, 0));
-			uvs.push_back(vec2(0, 1));
-			uvs.push_back(vec2(1, 1));
+			uvs.push_back(uvUpperLeft);
+			uvs.push_back(uvUpperLeft+vec2(charWidths[writeLetter] / fontImageWidth, 0));
+			uvs.push_back(uvUpperLeft + vec2(0, 1.0f/ fontImageHeight));
+			uvs.push_back(uvUpperLeft + vec2(charWidths[writeLetter] / fontImageWidth, 1.0f / fontImageHeight));
 
+			vec2 vertexUpperLeft(0, 0);
 			vertices.clear();
-			vertices.push_back(vec2(x2, -y2));
-			vertices.push_back(vec2(x2 + w, -y2));
-			vertices.push_back(vec2(x2, -y2 - h));
-			vertices.push_back(vec2(x2 + w, -y2 - h));
+			vertices.push_back(vertexUpperLeft);
+			vertices.push_back(vertexUpperLeft+vec2(charWidth, 0));
+			vertices.push_back(vertexUpperLeft + vec2(0, -fontHeight));
+			vertices.push_back(vertexUpperLeft + vec2(charWidth, -fontHeight));
 
 			glGenBuffers(1, &vertexBufferId);
 			glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
