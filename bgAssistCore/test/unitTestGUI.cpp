@@ -2,6 +2,8 @@
 #include <glfwExt.hpp>
 #include <shader.hpp>
 #include <texture.hpp>
+#include <font.hpp>
+#include <textBox.hpp>
 
 #include <fstream>
 #include <string>
@@ -12,57 +14,6 @@ using namespace std;
 #include <GLFW/glfw3.h>
 #include <glm/gtx/transform.hpp>
 using namespace glm;
-
-
-void loadFontMeta(const char * csvPath, int & outWidth, vector<float> &outCellWidths) {
-	int width = 0, height = 0;
-	ifstream file(csvPath, ifstream::in);
-
-	outCellWidths.clear();
-
-	if (file.is_open()) {
-		GLboolean firstArgFlag = true;
-		GLboolean spaceReservedFlag = false;
-		string argName, argValueString;
-		int imageWidth(0), imageHeight(0), cellWidth(0), cellHeight(0);
-		float fontHeight(0);
-
-		while (!file.eof()) {
-			char delim = (firstArgFlag) ? ',' : '\n';
-
-			if (firstArgFlag) {
-				getline(file, argName, delim);
-			}
-			else {
-				getline(file, argValueString, delim);
-				if (argName == "Image Width") imageWidth = stoi(argValueString);
-				else if (argName == "Image Height") imageHeight = stoi(argValueString);
-				else if (argName == "Cell Width") cellWidth = stoi(argValueString);
-				else if (argName == "Cell Height") cellHeight = stoi(argValueString);
-				else if (argName == "Font Height") fontHeight = stoi(argValueString);
-				else if (argName.find("Base Width") < argName.npos) {
-					int endIdx = argName.find(' ', 5);
-					string charIdxString = argName.substr(5, endIdx-5);
-					int charIdx = stoi(charIdxString);
-					outCellWidths[charIdx] = (float) stoi(argValueString) / fontHeight;
-				}
-			}
-
-			if (width == 0 && imageWidth > 0 && cellWidth > 0) width = imageWidth / cellWidth;
-			if (height == 0 && imageHeight > 0 && cellHeight > 0) height = imageHeight / cellHeight;
-
-			if (!spaceReservedFlag && width > 0 && height > 0) {
-				outCellWidths.resize(width*height);
-				spaceReservedFlag = true;
-			}
-
-			firstArgFlag = !firstArgFlag;
-		}
-	}
-	file.close();
-
-	outWidth = width;
-}
 
 
 int main(void)
@@ -112,8 +63,8 @@ int main(void)
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
 
-	// White background
-	glClearColor(1, 1, 1, 1);
+	// Black background
+	glClearColor(0, 0, 0, 1);
 
 	// Load shaders
 	string shaderPath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/shaders/";
@@ -122,105 +73,35 @@ int main(void)
 	GLuint textProgramId = LoadShaders(vertexShaderPath.c_str(), fragmentShaderPath.c_str());
 
 
-	GLuint textureId = glGetUniformLocation(textProgramId, "textShadingTexture");
-	GLuint textColorId = glGetUniformLocation(textProgramId, "textColor");
-
-	GLuint vertexBufferId, uvBufferId;
-	GLuint textImageId;
-
 	string fontPath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/fonts/";
-	string testFont = fontPath + "MalgunGothic_BMP_DXT3_1.DDS";
-	textImageId = loadDDS(testFont.c_str());
-
-	int fontImageWidth, fontImageHeight;
-	vector<float> charWidths;
-	string fontMethPath = fontPath + "MalgunGothic.csv";
-	loadFontMeta(fontMethPath.c_str(), fontImageWidth, charWidths);
-	fontImageHeight = charWidths.size() / fontImageWidth;
+	string testFont = fontPath + "InkFree_BMP_DXT3_1.DDS";
+	string fontMethPath = fontPath + "InkFree.csv";
+	font inkFreeFont;
+	inkFreeFont.loadFont(testFont.c_str(), fontMethPath.c_str());
 
 	int screenWidth, screenHeight;
 	glfwGetWindowSize(window, &screenWidth, &screenHeight);
-	float fontHeight = 48.0f * 2.0f / screenWidth;
+	float textHeight_screen = 48.0f * 2.0f / screenHeight;
+	vec2 startPos(-1.0f + 48.0f * 2.0f / screenWidth, 1.0f - textHeight_screen);
 
-	GLboolean buffersPassedFlag = false;
+	textBox drawTextBox;
+	drawTextBox.setProgramId(textProgramId);
+	drawTextBox.text = "Draw this text now!";
+	drawTextBox.upperLeftCornerLocation = startPos;
+	drawTextBox.textFont = &inkFreeFont;
+	drawTextBox.textHeight = textHeight_screen;
+	drawTextBox.textColor = vec4(1, 0, 0, 1); // red, opaque
 
-	vector<vec2> vertices;
-	vector<vec2> uvs;
-
-	vec4 red( 1, 0, 0, 1 );
-
-	int writeLetter = (int) 'd';
+	textBox drawTextBox2(drawTextBox);
+	drawTextBox2.upperLeftCornerLocation = startPos - vec2(0, textHeight_screen);
+	drawTextBox2.text = "There's more text down here! I'm melting! Whataworld!";
+	drawTextBox2.textColor = vec4(0, 1, 0, 0.3); // green, transparent
 
 	do {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glUseProgram(textProgramId);
 
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		if (!buffersPassedFlag) {
-			int imageRow = writeLetter / fontImageWidth;
-			int imageCol = writeLetter % fontImageWidth;
-			float charWidth = charWidths[writeLetter] * fontHeight;
-
-			vec2 uvUpperLeft((float)imageCol / fontImageWidth, (float) imageRow / fontImageHeight);
-			uvs.clear();
-			uvs.push_back(uvUpperLeft);
-			uvs.push_back(uvUpperLeft+vec2(charWidths[writeLetter] / fontImageWidth, 0));
-			uvs.push_back(uvUpperLeft + vec2(0, 1.0f/ fontImageHeight));
-			uvs.push_back(uvUpperLeft + vec2(charWidths[writeLetter] / fontImageWidth, 1.0f / fontImageHeight));
-
-			vec2 vertexUpperLeft(0, 0);
-			vertices.clear();
-			vertices.push_back(vertexUpperLeft);
-			vertices.push_back(vertexUpperLeft+vec2(charWidth, 0));
-			vertices.push_back(vertexUpperLeft + vec2(0, -fontHeight));
-			vertices.push_back(vertexUpperLeft + vec2(charWidth, -fontHeight));
-
-			glGenBuffers(1, &vertexBufferId);
-			glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
-			glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vec2), &vertices[0], GL_DYNAMIC_DRAW);
-
-			glGenBuffers(1, &uvBufferId);
-			glBindBuffer(GL_ARRAY_BUFFER, uvBufferId);
-			glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(vec2), &uvs[0], GL_DYNAMIC_DRAW);
-
-			buffersPassedFlag = true;
-		}
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, textImageId);
-		glUniform1i(textureId, 0);
-		glUniform4f(textColorId, red.r, red.g, red.b, red.a);
-
-		// 1st attribute buffer : vertices
-		glEnableVertexAttribArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
-		glVertexAttribPointer(
-			0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-			2,                  // 3 dimensions of space
-			GL_FLOAT,           // type
-			GL_FALSE,           // normalized?
-			0,                  // stride
-			(void*)0            // array buffer offset
-		);
-
-		// 2nd attribute buffer : texture
-		glEnableVertexAttribArray(1);
-		glBindBuffer(GL_ARRAY_BUFFER, uvBufferId);
-		glVertexAttribPointer(
-			1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
-			2,                                // size
-			GL_FLOAT,                         // type
-			GL_FALSE,                         // normalized?
-			0,                                // stride
-			(void*)0                          // array buffer offset
-		);
-		
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-		glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
+		drawTextBox.draw();
+		drawTextBox2.draw();
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

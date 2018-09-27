@@ -309,6 +309,8 @@ void prismTop::copyFaceImageUvs(const prismTop &inPrismTop) {
 
 // Draw the object in the main loop
 void prismTop::draw() {
+	glUseProgram(programId);
+
 	// Update the image, model matrix and MVP
 	// These routines will check if this is needed
 	passBuffersToGLM();
