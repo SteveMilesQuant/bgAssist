@@ -16,6 +16,21 @@ using namespace std;
 using namespace glm;
 
 
+textBox drawTextBox;
+
+void worldCharCallback(GLFWwindow* window, unsigned int codepoint, int mods) {
+	drawTextBox.callGlfwCharModsCallback(window, codepoint, mods);
+}
+
+void worldKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	drawTextBox.callGlfwKeyCallback(window, key, scancode, action, mods);
+}
+
+void worldMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+	drawTextBox.callGlfwMouseButtonCallback(window, button, action, mods);
+}
+
+
 int main(void)
 {
 
@@ -63,6 +78,11 @@ int main(void)
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
 
+	// Set callbacks
+	glfwSetCharModsCallback(window, worldCharCallback);
+	glfwSetKeyCallback(window, worldKeyCallback);
+	glfwSetMouseButtonCallback(window, worldMouseButtonCallback);
+
 	// Black background
 	glClearColor(0, 0, 0, 1);
 
@@ -72,7 +92,7 @@ int main(void)
 	string fragmentShaderPath = shaderPath + "TextShading.fragmentshader";
 	GLuint textProgramId = LoadShaders(vertexShaderPath.c_str(), fragmentShaderPath.c_str());
 
-
+	// Load font
 	string fontPath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/fonts/";
 	string testFont = fontPath + "InkFree_BMP_DXT3_1.DDS";
 	string fontMethPath = fontPath + "InkFree.csv";
@@ -81,27 +101,23 @@ int main(void)
 
 	int screenWidth, screenHeight;
 	glfwGetWindowSize(window, &screenWidth, &screenHeight);
+	float marginWidth = 48.0f * 2.0f / screenWidth;
 	float textHeight_screen = 48.0f * 2.0f / screenHeight;
-	vec2 startPos(-1.0f + 48.0f * 2.0f / screenWidth, 1.0f - textHeight_screen);
+	vec2 startPos(-1.0f + marginWidth, 1.0f - textHeight_screen);
 
-	textBox drawTextBox;
 	drawTextBox.setProgramId(textProgramId);
-	drawTextBox.text = "Draw this text now!";
-	drawTextBox.upperLeftCornerLocation = startPos;
 	drawTextBox.textFont = &inkFreeFont;
+	drawTextBox.isEditableFlag = true;
 	drawTextBox.textHeight = textHeight_screen;
+	drawTextBox.setBoxWidth(2.0f*(1.0f- marginWidth));
+	drawTextBox.setText("Draw this text now! This is too long! Long! Long! Longgg");
+	drawTextBox.upperLeftCornerLocation = startPos;
 	drawTextBox.textColor = vec4(1, 0, 0, 1); // red, opaque
-
-	textBox drawTextBox2(drawTextBox);
-	drawTextBox2.upperLeftCornerLocation = startPos - vec2(0, textHeight_screen);
-	drawTextBox2.text = "There's more text down here! I'm melting! Whataworld!";
-	drawTextBox2.textColor = vec4(0, 1, 0, 0.3); // green, transparent
 
 	do {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		drawTextBox.draw();
-		drawTextBox2.draw();
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

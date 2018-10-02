@@ -2,12 +2,17 @@
 
 #include <textBox.hpp>
 
+
 textBox::textBox() {
-	text.clear();
 	upperLeftCornerLocation = vec2(0,0);
 	textFont = NULL;
 	textHeight = 0;
 	textColor = vec4(1);
+	isEditableFlag = false;
+
+	text.clear();
+	boxWidth = 0; // this means don't wrap text at all
+	lineBreakIndices.clear();
 
 	vertices.clear();
 	vertices.resize(4);
@@ -20,16 +25,21 @@ textBox::textBox() {
 	programId = -1;
 	textureId = -1;
 	textColorId = -1;
+	cursor = NULL;
 }
 
 void textBox::copyTextBox(const textBox & inTextBox) {
 	if (this == &inTextBox) return;
 
-	text = inTextBox.text;
 	upperLeftCornerLocation = inTextBox.upperLeftCornerLocation;
 	textFont = inTextBox.textFont;
 	textHeight = inTextBox.textHeight;
 	textColor = inTextBox.textColor;
+	isEditableFlag = inTextBox.isEditableFlag;
+
+	text = inTextBox.text;
+	boxWidth = inTextBox.boxWidth;
+	lineBreakIndices = inTextBox.lineBreakIndices;
 
 	vertices.clear();
 	vertices.resize(4);
@@ -42,11 +52,15 @@ void textBox::copyTextBox(const textBox & inTextBox) {
 	programId = inTextBox.programId;
 	textureId = inTextBox.textureId;
 	textColorId = inTextBox.textColorId;
+
+	cursor = NULL;
+	cursorIndex = 0;
 }
 
 textBox::~textBox() {
-	glDeleteBuffers(1, &vertexBufferId);
-	glDeleteBuffers(1, &uvBufferId);
+	if (vertexBufferId >= 0) glDeleteBuffers(1, &vertexBufferId);
+	if (uvBufferId >= 0) glDeleteBuffers(1, &uvBufferId);
+	if (cursor) glfwDestroyCursor(cursor);
 }
 
 void textBox::passBuffersToGLM() {
@@ -77,6 +91,17 @@ void textBox::setProgramId(GLuint inProgramId) {
 	textColorId = glGetUniformLocation(inProgramId, "textColor");
 }
 
+void textBox::setText(string inText) {
+	text = inText;
+	analyzeText(0, false); // fully reanalyze the text for line breaks
+	setCursorIndex(text.length());
+}
+
+void textBox::setBoxWidth(GLfloat inBoxWidth) {
+	boxWidth = inBoxWidth;
+	analyzeText(0, false); // fully reanalyze the text for line breaks
+}
+
 void textBox::draw() {
 	glUseProgram(programId);
 
@@ -90,7 +115,15 @@ void textBox::draw() {
 	glUniform4f(textColorId, textColor.r, textColor.g, textColor.b, textColor.a);
 
 	vec2 corner = upperLeftCornerLocation;
-	for (char& c : text) corner = drawOneChar(c, corner);
+	int b = 0;
+	for (int i = 0; i < text.length(); i++) {
+		if (b < lineBreakIndices.size() && lineBreakIndices[b] == i) {
+			corner = vec2(upperLeftCornerLocation.x, corner.y - textHeight);
+			b++;
+			continue;
+		}
+		corner = drawOneChar(text[i], corner);
+	}
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
@@ -140,4 +173,112 @@ vec2 textBox::drawOneChar(char inChar, vec2 upperLeftCorner) {
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	return upperRightCorner;
+}
+
+
+void textBox::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoint, int mods) {
+	if (!isEditableFlag) return;
+
+	text.push_back((char)codepoint);
+	analyzeText(text.length() - 1, false); // TODO: use the cursor
+	setCursorIndex(cursorIndex + 1);
+}
+
+// Key callback
+// Delete for Backspace and Delete buttons
+// New line for Enter button
+void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (!isEditableFlag || action == GLFW_RELEASE) return;
+
+	switch (key) {
+	case GLFW_KEY_DELETE:
+	case GLFW_KEY_BACKSPACE:
+		if (text.size() > 0) {
+			text.pop_back();
+			analyzeText(text.length()-1, true); // TODO: use the cursor
+			setCursorIndex(cursorIndex - 1);
+		}
+		break;
+	case GLFW_KEY_ENTER:
+		text.push_back('\n');
+		analyzeText(text.length() - 1, false); // TODO: use the cursor
+		setCursorIndex(cursorIndex + 1);
+		break;
+	default: break;
+	}
+}
+
+void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+	if (!isEditableFlag || action != GLFW_PRESS) return;
+
+	int screenWidth, screenHeight;
+	double x, y;
+	vec2 clickPosition_world;
+	glfwGetWindowSize(window, &screenWidth, &screenHeight);
+	glfwGetCursorPos(window, &x, &y);
+	clickPosition_world.x = 2.0f * (GLfloat)x / screenWidth - 1.0f;
+	clickPosition_world.y = 2.0f * (GLfloat)y / screenHeight - 1.0f;
+
+	// Find the row
+}
+
+
+void textBox::analyzeText(int startAtIndex, GLboolean forDeletionFlag) {
+	GLboolean canBreakNow = !forDeletionFlag;
+	int i;
+	for (i= lineBreakIndices.size()-1; i >= 0; i--) {
+		if (lineBreakIndices[i] < startAtIndex) {
+			startAtIndex = lineBreakIndices[i] + 1;
+			if (canBreakNow) break;
+			else {
+				lineBreakIndices.pop_back();
+				canBreakNow = true;
+			}
+		}
+		else lineBreakIndices.pop_back();
+	}
+	if (i < 0) startAtIndex = 0;
+
+	float lineWidth = 0, lineWidthFromLastSpace = 0;;
+	int lastSpaceIdx = startAtIndex - 1;
+	for (int i = startAtIndex; i < text.length(); i++) {
+		float charWidth = textFont->getCharUnitWidth(text[i]) * textHeight;
+		lineWidth += charWidth;
+		lineWidthFromLastSpace += charWidth;
+
+		if (text[i] == ' ' || text[i] == '\n') {
+			lastSpaceIdx = i;
+			lineWidthFromLastSpace = 0;
+		}
+		
+		if (lastSpaceIdx >= startAtIndex) {
+			if (text[i] == '\n' || lineWidth + charWidth > boxWidth) {
+				lineBreakIndices.push_back(lastSpaceIdx);
+				lineWidth = lineWidthFromLastSpace;
+			}
+		}
+	}
+}
+
+// Set the cursor index, which is the index of the char it is to the left of
+// If the index is equal to the size of the string, then it's at the end
+void textBox::setCursorIndex(int inCursorIndex) {
+	if (!isEditableFlag) return;
+	cursorIndex = (inCursorIndex > 0)? inCursorIndex : 0;
+	cursorIndex = (cursorIndex < text.size())? cursorIndex : text.size();
+
+	// Find where the line starts
+	int lineStartIdx = 0;
+	int rowIdx = 0;
+	for (vector<int>::iterator iter = lineBreakIndices.begin(); iter != lineBreakIndices.end(); iter++) {
+		if (*iter <= cursorIndex) {
+			lineStartIdx = *iter;
+			rowIdx++;
+		}
+		else break;
+	}
+
+	if (!cursor) {
+		cursor = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+	}
 }
