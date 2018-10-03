@@ -9,6 +9,8 @@ textBox::textBox() {
 	textHeight = 0;
 	textColor = vec4(1);
 	isEditableFlag = false;
+	cursorWidth = 0;
+	cursorToggleTime = 0.5;
 
 	text.clear();
 	boxWidth = 0; // this means don't wrap text at all
@@ -18,14 +20,21 @@ textBox::textBox() {
 	vertices.resize(4);
 	uvs.clear();
 	uvs.resize(4);
+	cursorVertices.clear();
+	cursorVertices.resize(4);
 	vertexBufferId = -1;
 	uvBufferId = -1;
+	cursorVertexBufferId = -1;
 	buffersPassedFlag = false;
 
 	programId = -1;
 	textureId = -1;
 	textColorId = -1;
-	cursor = NULL;
+	isCursorFlagId = -1;
+
+	cursorIndex = 0;
+	drawCursorFlag = false;
+	cursorLastToggledTime = glfwGetTime();
 }
 
 void textBox::copyTextBox(const textBox & inTextBox) {
@@ -36,6 +45,8 @@ void textBox::copyTextBox(const textBox & inTextBox) {
 	textHeight = inTextBox.textHeight;
 	textColor = inTextBox.textColor;
 	isEditableFlag = inTextBox.isEditableFlag;
+	cursorWidth = inTextBox.cursorWidth;
+	cursorToggleTime = inTextBox.cursorToggleTime;
 
 	text = inTextBox.text;
 	boxWidth = inTextBox.boxWidth;
@@ -45,22 +56,27 @@ void textBox::copyTextBox(const textBox & inTextBox) {
 	vertices.resize(4);
 	uvs.clear();
 	uvs.resize(4);
+	cursorVertices.clear();
+	cursorVertices.resize(4);
 	vertexBufferId = -1;
 	uvBufferId = -1;
+	cursorVertexBufferId = -1;
 	buffersPassedFlag = false;
 
 	programId = inTextBox.programId;
 	textureId = inTextBox.textureId;
 	textColorId = inTextBox.textColorId;
+	isCursorFlagId = inTextBox.isCursorFlagId;
 
-	cursor = NULL;
-	cursorIndex = 0;
+	cursorIndex = inTextBox.cursorIndex;
+	drawCursorFlag = inTextBox.drawCursorFlag;
+	cursorLastToggledTime = inTextBox.cursorLastToggledTime;
 }
 
 textBox::~textBox() {
 	if (vertexBufferId >= 0) glDeleteBuffers(1, &vertexBufferId);
 	if (uvBufferId >= 0) glDeleteBuffers(1, &uvBufferId);
-	if (cursor) glfwDestroyCursor(cursor);
+	if (cursorVertexBufferId >= 0) glDeleteBuffers(1, &cursorVertexBufferId);
 }
 
 void textBox::passBuffersToGLM() {
@@ -72,6 +88,7 @@ void textBox::passBuffersToGLM() {
 	for (int i = 0; i < 4; i++) {
 		uvs[i] = zero;
 		vertices[i] = zero;
+		cursorVertices[i] = zero;
 	}
 	
 	glGenBuffers(1, &vertexBufferId);
@@ -82,6 +99,10 @@ void textBox::passBuffersToGLM() {
 	glBindBuffer(GL_ARRAY_BUFFER, uvBufferId);
 	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(vec2), &uvs[0], GL_DYNAMIC_DRAW);
 
+	glGenBuffers(1, &cursorVertexBufferId);
+	glBindBuffer(GL_ARRAY_BUFFER, cursorVertexBufferId);
+	glBufferData(GL_ARRAY_BUFFER, cursorVertices.size() * sizeof(vec2), &cursorVertices[0], GL_DYNAMIC_DRAW);
+
 	buffersPassedFlag = true;
 }
 
@@ -89,6 +110,7 @@ void textBox::setProgramId(GLuint inProgramId) {
 	programId = inProgramId;
 	textureId = glGetUniformLocation(inProgramId, "textShadingTexture");
 	textColorId = glGetUniformLocation(inProgramId, "textColor");
+	isCursorFlagId = glGetUniformLocation(inProgramId, "isCursorFlag");
 }
 
 void textBox::setText(string inText) {
@@ -113,10 +135,12 @@ void textBox::draw() {
 	glBindTexture(GL_TEXTURE_2D, textFont->getFontImageId());
 	glUniform1i(textureId, 0);
 	glUniform4f(textColorId, textColor.r, textColor.g, textColor.b, textColor.a);
+	glUniform1i(isCursorFlagId, 0);
 
 	vec2 corner = upperLeftCornerLocation;
 	int b = 0;
 	for (int i = 0; i < text.length(); i++) {
+		if (i == cursorIndex) drawCursor(corner);
 		if (b < lineBreakIndices.size() && lineBreakIndices[b] == i) {
 			corner = vec2(upperLeftCornerLocation.x, corner.y - textHeight);
 			b++;
@@ -124,6 +148,8 @@ void textBox::draw() {
 		}
 		corner = drawOneChar(text[i], corner);
 	}
+
+	if (cursorIndex >= text.length()) drawCursor(corner);
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
@@ -175,6 +201,40 @@ vec2 textBox::drawOneChar(char inChar, vec2 upperLeftCorner) {
 	return upperRightCorner;
 }
 
+void textBox::drawCursor(vec2 topLocation) {
+	if (!isEditableFlag) return;
+
+	double newTime = glfwGetTime();
+	if (newTime - cursorLastToggledTime > cursorToggleTime) {
+		drawCursorFlag = !drawCursorFlag;
+		cursorLastToggledTime = newTime;
+	}
+	if (!drawCursorFlag) return;
+
+	cursorVertices[0] = topLocation;
+	cursorVertices[1] = topLocation + vec2(cursorWidth, 0);
+	cursorVertices[2] = topLocation + vec2(0, -textHeight);
+	cursorVertices[3] = topLocation + vec2(cursorWidth, -textHeight);
+
+	glUniform1i(isCursorFlagId, 1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, cursorVertexBufferId);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, cursorVertices.size() * sizeof(vec2), &cursorVertices[0]);
+
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, cursorVertexBufferId);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+	// Don't care about this, but just passing something in
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, uvBufferId);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0 );
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, cursorVertices.size());
+
+	glUniform1i(isCursorFlagId, 0);
+}
+
 
 void textBox::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoint, int mods) {
 	if (!isEditableFlag) return;
@@ -187,6 +247,7 @@ void textBox::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoin
 // Key callback
 // Delete for Backspace and Delete buttons
 // New line for Enter button
+// Arrow buttons to move cursor
 void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	if (!isEditableFlag || action == GLFW_RELEASE) return;
 
@@ -202,6 +263,12 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 	case GLFW_KEY_ENTER:
 		text.push_back('\n');
 		analyzeText(text.length() - 1, false); // TODO: use the cursor
+		setCursorIndex(cursorIndex + 1);
+		break;
+	case GLFW_KEY_LEFT:
+		setCursorIndex(cursorIndex - 1);
+		break;
+	case GLFW_KEY_RIGHT:
 		setCursorIndex(cursorIndex + 1);
 		break;
 	default: break;
@@ -276,9 +343,5 @@ void textBox::setCursorIndex(int inCursorIndex) {
 			rowIdx++;
 		}
 		else break;
-	}
-
-	if (!cursor) {
-		cursor = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
 	}
 }

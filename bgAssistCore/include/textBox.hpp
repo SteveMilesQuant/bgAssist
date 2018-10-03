@@ -18,6 +18,8 @@ public:
 	GLfloat textHeight;
 	vec4 textColor;
 	GLboolean isEditableFlag;
+	GLfloat cursorWidth;
+	double cursorToggleTime;
 
 	textBox();
 	~textBox();
@@ -42,20 +44,25 @@ private:
 
 	vector<vec2> vertices;
 	vector<vec2> uvs;
+	vector<vec2> cursorVertices;
 	GLuint vertexBufferId;
 	GLuint uvBufferId;
+	GLuint cursorVertexBufferId;
 	GLboolean buffersPassedFlag;
 
 	GLuint programId;
 	GLuint textureId;
 	GLuint textColorId;
+	GLuint isCursorFlagId;
 
-	GLFWcursor* cursor; // GLFW cursor object
 	int cursorIndex; // index of the cursour within the string ("before" this index in the string)
+	GLboolean drawCursorFlag; // flag on whether we're currently drawing the cursor
+	double cursorLastToggledTime;
 
 	void passBuffersToGLM();
 	void copyTextBox(const textBox & inTextBox);
 	vec2 drawOneChar(char inChar, vec2 upperLeftCorner); // returns the upper right corner
+	void drawCursor(vec2 topLocation);
 	void analyzeText(int startAtIndex, GLboolean forDeletionFlag);
 	void setCursorIndex(int inCursorIndex);
 };

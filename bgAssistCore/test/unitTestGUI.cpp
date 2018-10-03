@@ -108,6 +108,7 @@ int main(void)
 	drawTextBox.setProgramId(textProgramId);
 	drawTextBox.textFont = &inkFreeFont;
 	drawTextBox.isEditableFlag = true;
+	drawTextBox.cursorWidth = 4.0f / screenWidth;
 	drawTextBox.textHeight = textHeight_screen;
 	drawTextBox.setBoxWidth(2.0f*(1.0f- marginWidth));
 	drawTextBox.setText("Draw this text now! This is too long! Long! Long! Longgg");
