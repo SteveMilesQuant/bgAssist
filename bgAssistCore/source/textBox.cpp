@@ -239,8 +239,8 @@ void textBox::drawCursor(vec2 topLocation) {
 void textBox::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoint, int mods) {
 	if (!isEditableFlag) return;
 
-	text.push_back((char)codepoint);
-	analyzeText(text.length() - 1, false); // TODO: use the cursor
+	text.insert(cursorIndex, (char *)&codepoint, 1);
+	analyzeText(cursorIndex, false);
 	setCursorIndex(cursorIndex + 1);
 }
 
@@ -255,16 +255,17 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 	case GLFW_KEY_DELETE:
 	case GLFW_KEY_BACKSPACE:
 		if (text.size() > 0) {
-			text.pop_back();
-			analyzeText(text.length()-1, true); // TODO: use the cursor
-			setCursorIndex(cursorIndex - 1);
+			text.erase(cursorIndex-1, 1);
+			setCursorIndex(cursorIndex - 1); 
+			analyzeText(cursorIndex, true);
 		}
 		break;
-	case GLFW_KEY_ENTER:
-		text.push_back('\n');
-		analyzeText(text.length() - 1, false); // TODO: use the cursor
+	case GLFW_KEY_ENTER: {
+		string newLine = "\n";
+		text.insert(cursorIndex, newLine);
+		analyzeText(cursorIndex, false);
 		setCursorIndex(cursorIndex + 1);
-		break;
+		break; }
 	case GLFW_KEY_LEFT:
 		setCursorIndex(cursorIndex - 1);
 		break;
