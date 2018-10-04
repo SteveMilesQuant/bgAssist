@@ -317,16 +317,15 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 				if (cursorXCoord_textBoxSpace - lastLineWidth < lineWidth - cursorXCoord_textBoxSpace) {
 					setCursorIndex(i);
 				}
-				else setCursorIndex(i+1);
+				else if (i == endAtCnt - 1) setCursorIndex(i);
+				else setCursorIndex(i + 1);
 				cursorSetFlag = true;
 				break;
 			}
 			lastLineWidth = lineWidth;
 		}
-		if (!cursorSetFlag) {
-			if (key == GLFW_KEY_UP || text[endAtCnt - 1] == '\n') setCursorIndex(endAtCnt-1);
-			else setCursorIndex(endAtCnt);
-		}
+		if (endAtCnt == text.length()) endAtCnt++;
+		if (!cursorSetFlag) setCursorIndex(endAtCnt-1);
 		analyzeText(cursorIndex, false); // TODO: make an analyze cursor function instead
 		break; }
 	default: break;
