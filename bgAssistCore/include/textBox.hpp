@@ -58,6 +58,7 @@ private:
 	int cursorIndex; // index of the cursour within the string ("before" this index in the string)
 	GLboolean drawCursorFlag; // flag on whether we're currently drawing the cursor
 	double cursorLastToggledTime;
+	GLfloat cursorXCoord_textBoxSpace;
 
 	void passBuffersToGLM();
 	void copyTextBox(const textBox & inTextBox);

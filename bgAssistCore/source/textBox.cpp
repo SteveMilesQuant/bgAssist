@@ -115,8 +115,8 @@ void textBox::setProgramId(GLuint inProgramId) {
 
 void textBox::setText(string inText) {
 	text = inText;
+	setCursorIndex((int)text.length()); 
 	analyzeText(0, false); // fully reanalyze the text for line breaks
-	setCursorIndex(text.length());
 }
 
 void textBox::setBoxWidth(GLfloat inBoxWidth) {
@@ -230,7 +230,7 @@ void textBox::drawCursor(vec2 topLocation) {
 	glBindBuffer(GL_ARRAY_BUFFER, uvBufferId);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0 );
 
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, cursorVertices.size());
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, (int)cursorVertices.size());
 
 	glUniform1i(isCursorFlagId, 0);
 }
@@ -240,8 +240,8 @@ void textBox::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoin
 	if (!isEditableFlag) return;
 
 	text.insert(cursorIndex, (char *)&codepoint, 1);
-	analyzeText(cursorIndex, false);
-	setCursorIndex(cursorIndex + 1);
+	setCursorIndex(cursorIndex + 1); 
+	analyzeText(cursorIndex-1, false);
 }
 
 // Key callback
@@ -253,8 +253,13 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 
 	switch (key) {
 	case GLFW_KEY_DELETE:
+		if (text.length() > 0 && cursorIndex < text.length()) {
+			text.erase(cursorIndex, 1);
+			analyzeText(cursorIndex, true);
+		}
+		break;
 	case GLFW_KEY_BACKSPACE:
-		if (text.size() > 0) {
+		if (text.length() > 0 && cursorIndex >= 1) {
 			text.erase(cursorIndex-1, 1);
 			setCursorIndex(cursorIndex - 1); 
 			analyzeText(cursorIndex, true);
@@ -263,15 +268,67 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 	case GLFW_KEY_ENTER: {
 		string newLine = "\n";
 		text.insert(cursorIndex, newLine);
-		analyzeText(cursorIndex, false);
-		setCursorIndex(cursorIndex + 1);
+		setCursorIndex(cursorIndex + 1); 
+		analyzeText(cursorIndex-1, false);
 		break; }
 	case GLFW_KEY_LEFT:
 		setCursorIndex(cursorIndex - 1);
+		analyzeText(cursorIndex, false); // TODO: make an analyze cursor function instead
 		break;
 	case GLFW_KEY_RIGHT:
 		setCursorIndex(cursorIndex + 1);
+		analyzeText(cursorIndex, false); // TODO: make an analyze cursor function instead
 		break;
+	case GLFW_KEY_UP:
+	case GLFW_KEY_DOWN: {
+		int i;
+		int startAtIndex;
+		int endAtCnt;
+
+		if (key == GLFW_KEY_DOWN) {
+			startAtIndex = (int)text.length();
+			endAtCnt = (int)text.length();
+			for (i = 0; i < lineBreakIndices.size(); i++) {
+				if (lineBreakIndices[i] >= cursorIndex) {
+					startAtIndex = lineBreakIndices[i] + 1;
+					if (i + 1 < lineBreakIndices.size()) endAtCnt = lineBreakIndices[i + 1] + 1;
+					break;
+				}
+			}
+		}
+		else {
+			startAtIndex = 0;
+			endAtCnt = 0;
+			for (i = (int)lineBreakIndices.size()-1; i >= 0; i--) {
+				if (lineBreakIndices[i] < cursorIndex) {
+					endAtCnt = lineBreakIndices[i] + 1;
+					if (i > 0) startAtIndex = lineBreakIndices[i - 1] + 1;
+					break;
+				}
+			}
+		}
+
+		float lineWidth = 0.0f;
+		float lastLineWidth = 0.0f;
+		GLboolean cursorSetFlag = false;
+		for (i = startAtIndex; i < endAtCnt; i++) {
+			lineWidth += textFont->getCharUnitWidth(text[i]) * textHeight;
+			if (lineWidth > cursorXCoord_textBoxSpace) {
+				if (cursorXCoord_textBoxSpace - lastLineWidth < lineWidth - cursorXCoord_textBoxSpace) {
+					setCursorIndex(i);
+				}
+				else setCursorIndex(i+1);
+				cursorSetFlag = true;
+				break;
+			}
+			lastLineWidth = lineWidth;
+		}
+		if (!cursorSetFlag) {
+			if (key == GLFW_KEY_UP || text[endAtCnt - 1] == '\n') setCursorIndex(endAtCnt-1);
+			else setCursorIndex(endAtCnt);
+		}
+		analyzeText(cursorIndex, false); // TODO: make an analyze cursor function instead
+		break; }
 	default: break;
 	}
 }
@@ -294,7 +351,7 @@ void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int ac
 void textBox::analyzeText(int startAtIndex, GLboolean forDeletionFlag) {
 	GLboolean canBreakNow = !forDeletionFlag;
 	int i;
-	for (i= lineBreakIndices.size()-1; i >= 0; i--) {
+	for (i = (int)lineBreakIndices.size()-1; i >= 0; i--) {
 		if (lineBreakIndices[i] < startAtIndex) {
 			startAtIndex = lineBreakIndices[i] + 1;
 			if (canBreakNow) break;
@@ -307,9 +364,11 @@ void textBox::analyzeText(int startAtIndex, GLboolean forDeletionFlag) {
 	}
 	if (i < 0) startAtIndex = 0;
 
-	float lineWidth = 0, lineWidthFromLastSpace = 0;;
+	float lineWidth = 0, lineWidthFromLastSpace = 0;
 	int lastSpaceIdx = startAtIndex - 1;
 	for (int i = startAtIndex; i < text.length(); i++) {
+		if (i == cursorIndex) cursorXCoord_textBoxSpace = lineWidth;
+
 		float charWidth = textFont->getCharUnitWidth(text[i]) * textHeight;
 		lineWidth += charWidth;
 		lineWidthFromLastSpace += charWidth;
@@ -326,6 +385,8 @@ void textBox::analyzeText(int startAtIndex, GLboolean forDeletionFlag) {
 			}
 		}
 	}
+
+	if (cursorIndex >= text.length()) cursorXCoord_textBoxSpace = lineWidth;
 }
 
 // Set the cursor index, which is the index of the char it is to the left of
@@ -333,7 +394,7 @@ void textBox::analyzeText(int startAtIndex, GLboolean forDeletionFlag) {
 void textBox::setCursorIndex(int inCursorIndex) {
 	if (!isEditableFlag) return;
 	cursorIndex = (inCursorIndex > 0)? inCursorIndex : 0;
-	cursorIndex = (cursorIndex < text.size())? cursorIndex : text.size();
+	cursorIndex = (cursorIndex < (int)text.length())? cursorIndex : (int)text.length();
 
 	// Find where the line starts
 	int lineStartIdx = 0;
