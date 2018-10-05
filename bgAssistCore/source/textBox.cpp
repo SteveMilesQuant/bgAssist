@@ -142,6 +142,7 @@ void textBox::draw() {
 	for (int i = 0; i < text.length(); i++) {
 		if (i == cursorIndex) drawCursor(corner);
 		if (b < lineBreakIndices.size() && lineBreakIndices[b] == i) {
+			if (text[i] == '-') corner = drawOneChar(text[i], corner);
 			corner = vec2(upperLeftCornerLocation.x, corner.y - textHeight);
 			b++;
 			continue;
@@ -238,10 +239,22 @@ void textBox::drawCursor(vec2 topLocation) {
 
 void textBox::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoint, int mods) {
 	if (!isEditableFlag) return;
+	char charInsert = (char) codepoint;
 
-	text.insert(cursorIndex, (char *)&codepoint, 1);
-	setCursorIndex(cursorIndex + 1); 
-	analyzeText(cursorIndex-1, false);
+	text.insert(cursorIndex, &charInsert, 1);
+	setCursorIndex(cursorIndex + 1);
+	if (charInsert == '-' || charInsert == ' ' || charInsert == '\n') {
+		int i, startAnalysisAt;
+		for (i = (int)lineBreakIndices.size() - 1; i >= 0; i--) {
+			if (lineBreakIndices[i] < cursorIndex - 1) {
+				break;
+			}
+		}
+		if (i < 1) startAnalysisAt = 0;
+		else startAnalysisAt = lineBreakIndices[i - 1] + 1;
+		analyzeText(startAnalysisAt, false);
+	}
+	else analyzeText(cursorIndex-1, false);
 }
 
 // Key callback
@@ -250,6 +263,8 @@ void textBox::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoin
 // Arrow buttons to move cursor
 void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	if (!isEditableFlag || action == GLFW_RELEASE) return;
+
+	int i;
 
 	switch (key) {
 	case GLFW_KEY_DELETE:
@@ -279,11 +294,29 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 		setCursorIndex(cursorIndex + 1);
 		analyzeText(cursorIndex, false); // TODO: make an analyze cursor function instead
 		break;
+	case GLFW_KEY_HOME: {
+		for (i = (int)lineBreakIndices.size() - 1; i >= 0; i--) {
+			if (lineBreakIndices[i] < cursorIndex) {
+				cursorIndex = lineBreakIndices[i] + 1;
+				break;
+			}
+		}
+		if (i < 0) cursorIndex = 0;
+		analyzeText(cursorIndex, false);
+		break; }
+	case GLFW_KEY_END: {
+		for (i = 0; i < lineBreakIndices.size(); i++) {
+			if (lineBreakIndices[i] >= cursorIndex) {
+				cursorIndex = lineBreakIndices[i];
+				break;
+			}
+		}
+		if (i == lineBreakIndices.size()) cursorIndex = (int)text.length();
+		analyzeText(cursorIndex, false);
+		break; }
 	case GLFW_KEY_UP:
 	case GLFW_KEY_DOWN: {
-		int i;
-		int startAtIndex;
-		int endAtCnt;
+		int startAtIndex, endAtCnt;
 
 		if (key == GLFW_KEY_DOWN) {
 			startAtIndex = (int)text.length();
@@ -310,7 +343,6 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 
 		float lineWidth = 0.0f;
 		float lastLineWidth = 0.0f;
-		GLboolean cursorSetFlag = false;
 		for (i = startAtIndex; i < endAtCnt; i++) {
 			lineWidth += textFont->getCharUnitWidth(text[i]) * textHeight;
 			if (lineWidth > cursorXCoord_textBoxSpace) {
@@ -319,13 +351,12 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 				}
 				else if (i == endAtCnt - 1) setCursorIndex(i);
 				else setCursorIndex(i + 1);
-				cursorSetFlag = true;
 				break;
 			}
 			lastLineWidth = lineWidth;
 		}
-		if (endAtCnt == text.length()) endAtCnt++;
-		if (!cursorSetFlag) setCursorIndex(endAtCnt-1);
+		if (i == text.length()) setCursorIndex(i);
+		else if (i == endAtCnt) setCursorIndex(i-1);
 		analyzeText(cursorIndex, false); // TODO: make an analyze cursor function instead
 		break; }
 	default: break;
@@ -382,6 +413,13 @@ void textBox::analyzeText(int startAtIndex, GLboolean forDeletionFlag) {
 				lineBreakIndices.push_back(lastSpaceIdx);
 				lineWidth = lineWidthFromLastSpace;
 			}
+		}
+
+		// Check hyphen afterwards because we would still draw the hyphen
+		// And if the hyphen goes over, we have a problem
+		if (text[i] == '-') {
+			lastSpaceIdx = i;
+			lineWidthFromLastSpace = 0;
 		}
 	}
 

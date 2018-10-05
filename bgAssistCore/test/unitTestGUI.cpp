@@ -95,9 +95,9 @@ int main(void)
 	// Load font
 	string fontPath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/fonts/";
 	string testFont = fontPath + "InkFree_BMP_DXT3_1.DDS";
-	string fontMethPath = fontPath + "InkFree.csv";
+	string fontMetaPath = fontPath + "InkFree.csv";
 	font inkFreeFont;
-	inkFreeFont.loadFont(testFont.c_str(), fontMethPath.c_str());
+	inkFreeFont.loadFont(testFont.c_str(), fontMetaPath.c_str());
 
 	int screenWidth, screenHeight;
 	glfwGetWindowSize(window, &screenWidth, &screenHeight);
