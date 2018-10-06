@@ -2,6 +2,7 @@
 
 #include <textBox.hpp>
 
+#include <algorithm>
 
 textBox::textBox() {
 	upperLeftCornerLocation = vec2(0,0);
@@ -372,12 +373,42 @@ void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int ac
 	glfwGetWindowSize(window, &screenWidth, &screenHeight);
 	glfwGetCursorPos(window, &x, &y);
 	clickPosition_world.x = 2.0f * (GLfloat)x / screenWidth - 1.0f;
-	clickPosition_world.y = 2.0f * (GLfloat)y / screenHeight - 1.0f;
+	clickPosition_world.y = 1.0f - 2.0f * (GLfloat)y / screenHeight;
+	vec2 tempVec = clickPosition_world - upperLeftCornerLocation;
+	vec2 clickPosition_textbox(tempVec.x, -tempVec.y); // need to reverse direction of y again
 
 	// Find the row
+	int rowIdx = (int)(clickPosition_textbox.y / textHeight);
+	int charIdx, endRowCnt;
+	rowIdx = std::min( (int) std::max(rowIdx, (int)0), (int)lineBreakIndices.size());
+	if (rowIdx < 1) charIdx = 0;
+	else charIdx = lineBreakIndices[rowIdx-1]+1;
+
+	// Initialize cursor index
+	if (rowIdx < lineBreakIndices.size()) {
+		endRowCnt = lineBreakIndices[rowIdx];
+		setCursorIndex(lineBreakIndices[rowIdx]);
+	}
+	else {
+		endRowCnt = (int)text.length();
+		setCursorIndex((int)text.length());
+	}
+
+	// Find the column
+	GLfloat lineWidth = 0.0f;
+	for (; charIdx < endRowCnt; charIdx++) {
+		GLfloat charWidth = textFont->getCharUnitWidth(text[charIdx]) * textHeight;
+		if (lineWidth + charWidth / 2.0f > clickPosition_textbox.x) {
+			setCursorIndex(charIdx);
+			break;
+		}
+		lineWidth += charWidth;
+	}
+	cursorXCoord_textBoxSpace = lineWidth;
 }
 
 
+// Analyzes text for line breaks and also figures out where the cursor belongs in the worldspace
 void textBox::analyzeText(int startAtIndex, GLboolean forDeletionFlag) {
 	GLboolean canBreakNow = !forDeletionFlag;
 	int i;
