@@ -27,7 +27,8 @@ public:
 	textBox(const textBox && inTextBox) { copyTextBox(inTextBox); }
 	textBox & operator = (const textBox & inTextBox) { copyTextBox(inTextBox); return *this; }
 
-	void setProgramId(GLuint inProgramId);
+	void setTextProgramId(GLuint inProgramId); // image shader program
+	void setCursorProgramId(GLuint inProgramId); // solid color shader program
 	void setText(string inText);
 	void setBoxWidth(GLfloat inBoxWidth);
 	// TODO: create setFont, setTextHeight
@@ -50,10 +51,12 @@ private:
 	GLuint cursorVertexBufferId;
 	GLboolean buffersPassedFlag;
 
-	GLuint programId;
-	GLuint textureId;
-	GLuint textColorId;
-	GLuint isCursorFlagId;
+	GLuint textProgramId;
+	GLuint textureUniformId;
+	GLuint textColorUniformId;
+
+	GLuint cursorProgramId;
+	GLuint cursorColorUniformId;
 
 	int cursorIndex; // index of the cursour within the string ("before" this index in the string)
 	GLboolean drawCursorFlag; // flag on whether we're currently drawing the cursor

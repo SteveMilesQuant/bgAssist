@@ -88,9 +88,13 @@ int main(void)
 
 	// Load shaders
 	string shaderPath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/shaders/";
-	string vertexShaderPath = shaderPath + "TextShading.vertexshader";
-	string fragmentShaderPath = shaderPath + "TextShading.fragmentshader";
-	GLuint textProgramId = LoadShaders(vertexShaderPath.c_str(), fragmentShaderPath.c_str());
+	string vertexShaderPath = shaderPath + "2DText.vertexshader";
+	string fragmentShaderPath = shaderPath + "2DText.fragmentshader";
+	GLuint twodimImageProgramId = LoadShaders(vertexShaderPath.c_str(), fragmentShaderPath.c_str());
+
+	vertexShaderPath = shaderPath + "2DSolidColor.vertexshader";
+	fragmentShaderPath = shaderPath + "2DSolidColor.fragmentshader";
+	GLuint twodimSoloColorProgramId = LoadShaders(vertexShaderPath.c_str(), fragmentShaderPath.c_str());
 
 	// Load font
 	string fontPath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/fonts/";
@@ -105,7 +109,8 @@ int main(void)
 	float textHeight_screen = 48.0f * 2.0f / screenHeight;
 	vec2 startPos(-1.0f + marginWidth, 1.0f - textHeight_screen);
 
-	drawTextBox.setProgramId(textProgramId);
+	drawTextBox.setTextProgramId(twodimImageProgramId);
+	drawTextBox.setCursorProgramId(twodimSoloColorProgramId);
 	drawTextBox.textFont = &inkFreeFont;
 	drawTextBox.isEditableFlag = true;
 	drawTextBox.cursorWidth = 4.0f / screenWidth;
@@ -127,7 +132,7 @@ int main(void)
 		glfwWindowShouldClose(window) == 0);
 
 	// Clean up
-	glDeleteProgram(textProgramId);
+	glDeleteProgram(twodimImageProgramId);
 	glDeleteVertexArrays(1, &VertexArrayID);
 	glfwDestroyWindow(window);
 	glfwTerminate();

@@ -28,10 +28,12 @@ textBox::textBox() {
 	cursorVertexBufferId = -1;
 	buffersPassedFlag = false;
 
-	programId = -1;
-	textureId = -1;
-	textColorId = -1;
-	isCursorFlagId = -1;
+	textProgramId = -1;
+	textureUniformId = -1;
+	textColorUniformId = -1;
+
+	cursorProgramId = -1;
+	cursorColorUniformId = -1;
 
 	cursorIndex = 0;
 	drawCursorFlag = false;
@@ -64,10 +66,12 @@ void textBox::copyTextBox(const textBox & inTextBox) {
 	cursorVertexBufferId = -1;
 	buffersPassedFlag = false;
 
-	programId = inTextBox.programId;
-	textureId = inTextBox.textureId;
-	textColorId = inTextBox.textColorId;
-	isCursorFlagId = inTextBox.isCursorFlagId;
+	textProgramId = inTextBox.textProgramId;
+	textureUniformId = inTextBox.textureUniformId;
+	textColorUniformId = inTextBox.textColorUniformId;
+
+	cursorProgramId = inTextBox.cursorProgramId;
+	cursorColorUniformId = inTextBox.cursorColorUniformId;
 
 	cursorIndex = inTextBox.cursorIndex;
 	drawCursorFlag = inTextBox.drawCursorFlag;
@@ -92,6 +96,10 @@ void textBox::passBuffersToGLM() {
 		cursorVertices[i] = zero;
 	}
 	
+	glUseProgram(textProgramId);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	glGenBuffers(1, &vertexBufferId);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vec2), &vertices[0], GL_DYNAMIC_DRAW);
@@ -100,6 +108,10 @@ void textBox::passBuffersToGLM() {
 	glBindBuffer(GL_ARRAY_BUFFER, uvBufferId);
 	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(vec2), &uvs[0], GL_DYNAMIC_DRAW);
 
+	glUseProgram(cursorProgramId);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	glGenBuffers(1, &cursorVertexBufferId);
 	glBindBuffer(GL_ARRAY_BUFFER, cursorVertexBufferId);
 	glBufferData(GL_ARRAY_BUFFER, cursorVertices.size() * sizeof(vec2), &cursorVertices[0], GL_DYNAMIC_DRAW);
@@ -107,11 +119,15 @@ void textBox::passBuffersToGLM() {
 	buffersPassedFlag = true;
 }
 
-void textBox::setProgramId(GLuint inProgramId) {
-	programId = inProgramId;
-	textureId = glGetUniformLocation(inProgramId, "textShadingTexture");
-	textColorId = glGetUniformLocation(inProgramId, "textColor");
-	isCursorFlagId = glGetUniformLocation(inProgramId, "isCursorFlag");
+void textBox::setTextProgramId(GLuint inProgramId) {
+	textProgramId = inProgramId;
+	textureUniformId = glGetUniformLocation(inProgramId, "textImageTexture");
+	textColorUniformId = glGetUniformLocation(inProgramId, "textColor");
+}
+
+void textBox::setCursorProgramId(GLuint inProgramId) {
+	cursorProgramId = inProgramId;
+	cursorColorUniformId = glGetUniformLocation(inProgramId, "objectColor");
 }
 
 void textBox::setText(string inText) {
@@ -126,17 +142,14 @@ void textBox::setBoxWidth(GLfloat inBoxWidth) {
 }
 
 void textBox::draw() {
-	glUseProgram(programId);
-
+	
 	passBuffersToGLM();
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glUseProgram(textProgramId);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textFont->getFontImageId());
-	glUniform1i(textureId, 0);
-	glUniform4f(textColorId, textColor.r, textColor.g, textColor.b, textColor.a);
-	glUniform1i(isCursorFlagId, 0);
+	glUniform1i(textureUniformId, 0);
+	glUniform4f(textColorUniformId, textColor.r, textColor.g, textColor.b, textColor.a);
 
 	vec2 corner = upperLeftCornerLocation;
 	int b = 0;
@@ -213,12 +226,13 @@ void textBox::drawCursor(vec2 topLocation) {
 	}
 	if (!drawCursorFlag) return;
 
+	glUseProgram(cursorProgramId);
+	glUniform4f(cursorColorUniformId, textColor.r, textColor.g, textColor.b, textColor.a);
+
 	cursorVertices[0] = topLocation;
 	cursorVertices[1] = topLocation + vec2(cursorWidth, 0);
 	cursorVertices[2] = topLocation + vec2(0, -textHeight);
 	cursorVertices[3] = topLocation + vec2(cursorWidth, -textHeight);
-
-	glUniform1i(isCursorFlagId, 1);
 
 	glBindBuffer(GL_ARRAY_BUFFER, cursorVertexBufferId);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, cursorVertices.size() * sizeof(vec2), &cursorVertices[0]);
@@ -227,14 +241,14 @@ void textBox::drawCursor(vec2 topLocation) {
 	glBindBuffer(GL_ARRAY_BUFFER, cursorVertexBufferId);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-	// Don't care about this, but just passing something in
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, uvBufferId);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (void*)0 );
-
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, (int)cursorVertices.size());
 
-	glUniform1i(isCursorFlagId, 0);
+	glDisableVertexAttribArray(0);
+
+	// Go back to text program
+	glUseProgram(textProgramId);
+	glUniform4f(textColorUniformId, textColor.r, textColor.g, textColor.b, textColor.a);
+
 }
 
 
