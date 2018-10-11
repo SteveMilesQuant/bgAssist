@@ -549,7 +549,7 @@ void textBox::setCursorIndex(int inCursorIndex) {
 
 
 // If the text is longer than the height of the box, let the scroll bar pop up
-// Position of line i = -boxHeight * barRelativePos + i * textHeight
+// Position of line i = textHeight * (i - nRows * barRelativePos)
 void textBox::analyzeScrollBar() {
 	int nRows = (int)lineBreakIndices.size() + 1;
 	GLfloat trueBoxHeight = textHeight * nRows;
@@ -568,7 +568,7 @@ void textBox::analyzeScrollBar() {
 		// Move the bar so that we stay with the cursor
 		GLfloat origPos = scrollBar.getBarRelativePosition();
 		GLfloat maxPos = (GLfloat) cursorRowIdx / nRows;
-		GLfloat minPos = textHeight / boxDimensions.y * (cursorRowIdx + 1) - 1.0f;
+		GLfloat minPos = ((GLfloat)(cursorRowIdx + 1) - boxDimensions.y / textHeight) / nRows;
 		GLfloat newPos = fmin(fmax(origPos, minPos), maxPos);
 		scrollBar.setBarRelativePosition(newPos);
 	}
