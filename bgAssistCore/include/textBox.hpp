@@ -2,6 +2,7 @@
 #pragma once
 
 #include <font.hpp>
+#include <scrollBar.hpp>
 
 #include <string>
 using namespace std;
@@ -13,10 +14,7 @@ using namespace glm;
 
 class textBox {
 public:
-	vec2 upperLeftCornerLocation;
 	font * textFont;
-	GLfloat textHeight;
-	vec4 textColor;
 	GLboolean isEditableFlag;
 	GLfloat cursorWidth;
 	double cursorToggleTime;
@@ -30,8 +28,13 @@ public:
 	void setTextProgramId(GLuint inProgramId); // image shader program
 	void setCursorProgramId(GLuint inProgramId); // solid color shader program
 	void setText(string inText);
-	void setBoxWidth(GLfloat inBoxWidth);
-	// TODO: create setFont, setTextHeight
+	void setTextColor(vec4 inColor);
+	void setBoxLocation(vec2 inUpperLeftCornerLocation);
+	void setBoxDimensions(vec2 inBoxDim); // zero or negative means unfettered
+	void setScrollBarWidth(GLfloat inWidth);
+	void loadScrollBarImage(const char * imagePath) { scrollBar.loadImage(imagePath); }
+	void setTextHeight(GLfloat inHeight);
+	// TODO: create setFont
 
 	void draw();
 	void callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoint, int mods);
@@ -40,7 +43,11 @@ public:
 
 private:
 	string text;
-	GLfloat boxWidth;
+	vec4 textColor;
+	GLfloat textHeight;
+	vec2 upperLeftCornerLocation;
+	vec2 boxDimensions;
+	GLfloat boxEffectiveWidth; // width minus the scroll bar
 	vector<int> lineBreakIndices; // line breaks as indices in text
 
 	vector<vec2> vertices;
@@ -62,12 +69,17 @@ private:
 	GLboolean drawCursorFlag; // flag on whether we're currently drawing the cursor
 	double cursorLastToggledTime;
 	GLfloat cursorXCoord_textBoxSpace;
+	int cursorRowIdx;
+
+	scrollBar scrollBar;
 
 	void passBuffersToGLM();
 	void copyTextBox(const textBox & inTextBox);
 	vec2 drawOneChar(char inChar, vec2 upperLeftCorner); // returns the upper right corner
 	void drawCursor(vec2 topLocation);
 	void analyzeText(int startAtIndex, GLboolean forDeletionFlag);
+	void analyzeScrollBar();
 	void setCursorIndex(int inCursorIndex);
+	vec2 calcEffectiveLocation();
 };
 

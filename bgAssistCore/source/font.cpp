@@ -32,6 +32,7 @@ font::~font() {
 }
 
 void font::loadFont(const char * fontImagePath, const char * fontMetadataPath) {
+	if (!imageCopiedFlag) glDeleteTextures(1, &fontImageId);
 	fontImageId = loadDDS(fontImagePath);
 	imageCopiedFlag = false;
 

@@ -14,7 +14,8 @@ textBox::textBox() {
 	cursorToggleTime = 0.5;
 
 	text.clear();
-	boxWidth = 0; // this means don't wrap text at all
+	boxDimensions = vec2(0, 0); // this means don't wrap text at all
+	boxEffectiveWidth = 0;
 	lineBreakIndices.clear();
 
 	vertices.clear();
@@ -38,6 +39,7 @@ textBox::textBox() {
 	cursorIndex = 0;
 	drawCursorFlag = false;
 	cursorLastToggledTime = glfwGetTime();
+	cursorRowIdx = 0;
 }
 
 void textBox::copyTextBox(const textBox & inTextBox) {
@@ -52,7 +54,8 @@ void textBox::copyTextBox(const textBox & inTextBox) {
 	cursorToggleTime = inTextBox.cursorToggleTime;
 
 	text = inTextBox.text;
-	boxWidth = inTextBox.boxWidth;
+	boxDimensions = inTextBox.boxDimensions;
+	boxEffectiveWidth = inTextBox.boxEffectiveWidth;
 	lineBreakIndices = inTextBox.lineBreakIndices;
 
 	vertices.clear();
@@ -76,6 +79,9 @@ void textBox::copyTextBox(const textBox & inTextBox) {
 	cursorIndex = inTextBox.cursorIndex;
 	drawCursorFlag = inTextBox.drawCursorFlag;
 	cursorLastToggledTime = inTextBox.cursorLastToggledTime;
+	cursorRowIdx = inTextBox.cursorRowIdx;
+
+	scrollBar = inTextBox.scrollBar;
 }
 
 textBox::~textBox() {
@@ -123,6 +129,7 @@ void textBox::setTextProgramId(GLuint inProgramId) {
 	textProgramId = inProgramId;
 	textureUniformId = glGetUniformLocation(inProgramId, "textImageTexture");
 	textColorUniformId = glGetUniformLocation(inProgramId, "textColor");
+	scrollBar.setProgramId(inProgramId);
 }
 
 void textBox::setCursorProgramId(GLuint inProgramId) {
@@ -136,9 +143,45 @@ void textBox::setText(string inText) {
 	analyzeText(0, false); // fully reanalyze the text for line breaks
 }
 
-void textBox::setBoxWidth(GLfloat inBoxWidth) {
-	boxWidth = inBoxWidth;
+void textBox::setTextColor(vec4 inColor) {
+	textColor = inColor;
+	scrollBar.barColor = inColor;
+	scrollBar.barColor[3] *= 0.5; // about half as transparent for the bar
+}
+
+void textBox::setTextHeight(GLfloat inHeight) {
+	textHeight = inHeight;
+	analyzeScrollBar();
+}
+
+void textBox::setBoxLocation(vec2 inUpperLeftCornerLocation) {
+	upperLeftCornerLocation = inUpperLeftCornerLocation;
+	scrollBar.setLocation(upperLeftCornerLocation + vec2(boxEffectiveWidth, 0));
+}
+
+void textBox::setBoxDimensions(vec2 inBoxDim) {
+	boxDimensions = inBoxDim;
+	vec2 origDim = scrollBar.getDimensions();
+	boxEffectiveWidth = boxDimensions.x - origDim.x;
+	scrollBar.setDimensions(vec2(origDim.x, boxDimensions.y));
+	scrollBar.setLocation(upperLeftCornerLocation + vec2(boxDimensions.x, 0));
 	analyzeText(0, false); // fully reanalyze the text for line breaks
+}
+
+void textBox::setScrollBarWidth(GLfloat inWidth) {
+	boxEffectiveWidth = boxDimensions.x - inWidth; 
+	vec2 origDim = scrollBar.getDimensions();
+	scrollBar.setDimensions(vec2(inWidth, boxDimensions.y));
+	analyzeText(0, false); // fully reanalyze the text for line breaks
+}
+
+// If we've scrolled, we have a hidden upper left corner
+// Calculate this value from the user-set upper left corner and total text height
+vec2 textBox::calcEffectiveLocation() {
+	int nRows = (int)lineBreakIndices.size() + 1;
+	GLfloat effectiveBoxHeight = textHeight * nRows;
+	GLfloat posAdj = scrollBar.getBarRelativePosition() * effectiveBoxHeight;
+	return upperLeftCornerLocation + vec2(0, posAdj);
 }
 
 void textBox::draw() {
@@ -150,14 +193,15 @@ void textBox::draw() {
 	glBindTexture(GL_TEXTURE_2D, textFont->getFontImageId());
 	glUniform1i(textureUniformId, 0);
 	glUniform4f(textColorUniformId, textColor.r, textColor.g, textColor.b, textColor.a);
-
-	vec2 corner = upperLeftCornerLocation;
+	
+	vec2 effectiveUpperLeftCorner = calcEffectiveLocation();
+	vec2 corner = effectiveUpperLeftCorner;
 	int b = 0;
 	for (int i = 0; i < text.length(); i++) {
 		if (i == cursorIndex) drawCursor(corner);
 		if (b < lineBreakIndices.size() && lineBreakIndices[b] == i) {
 			if (text[i] == '-') corner = drawOneChar(text[i], corner);
-			corner = vec2(upperLeftCornerLocation.x, corner.y - textHeight);
+			corner = vec2(effectiveUpperLeftCorner.x, corner.y - textHeight);
 			b++;
 			continue;
 		}
@@ -168,6 +212,10 @@ void textBox::draw() {
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
+
+	// Now draw the scroll bar
+	// TODO: need conditional
+	scrollBar.draw();
 }
 
 vec2 textBox::drawOneChar(char inChar, vec2 upperLeftCorner) {
@@ -386,9 +434,19 @@ void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int ac
 	vec2 clickPosition_world;
 	glfwGetWindowSize(window, &screenWidth, &screenHeight);
 	glfwGetCursorPos(window, &x, &y);
+
+	// If we haven't clicked on the box, return
+	if (clickPosition_world.x < upperLeftCornerLocation.x ||
+		clickPosition_world.x > upperLeftCornerLocation.x + boxDimensions.x ||
+		clickPosition_world.y > upperLeftCornerLocation.y ||
+		clickPosition_world.y > upperLeftCornerLocation.y - boxDimensions.y) {
+		return;
+	}
+
+	vec2 effectiveUpperLeftCorner = calcEffectiveLocation();
 	clickPosition_world.x = 2.0f * (GLfloat)x / screenWidth - 1.0f;
 	clickPosition_world.y = 1.0f - 2.0f * (GLfloat)y / screenHeight;
-	vec2 tempVec = clickPosition_world - upperLeftCornerLocation;
+	vec2 tempVec = clickPosition_world - effectiveUpperLeftCorner;
 	vec2 clickPosition_textbox(tempVec.x, -tempVec.y); // need to reverse direction of y again
 
 	// Find the row
@@ -442,7 +500,10 @@ void textBox::analyzeText(int startAtIndex, GLboolean forDeletionFlag) {
 	float lineWidth = 0, lineWidthFromLastSpace = 0;
 	int lastSpaceIdx = startAtIndex - 1;
 	for (int i = startAtIndex; i < text.length(); i++) {
-		if (i == cursorIndex) cursorXCoord_textBoxSpace = lineWidth;
+		if (i == cursorIndex) {
+			cursorXCoord_textBoxSpace = lineWidth;
+			cursorRowIdx = (int)lineBreakIndices.size();
+		}
 
 		float charWidth = textFont->getCharUnitWidth(text[i]) * textHeight;
 		lineWidth += charWidth;
@@ -454,7 +515,7 @@ void textBox::analyzeText(int startAtIndex, GLboolean forDeletionFlag) {
 		}
 		
 		if (lastSpaceIdx >= startAtIndex) {
-			if (text[i] == '\n' || lineWidth + charWidth > boxWidth) {
+			if (text[i] == '\n' || lineWidth + charWidth > boxEffectiveWidth) {
 				lineBreakIndices.push_back(lastSpaceIdx);
 				lineWidth = lineWidthFromLastSpace;
 			}
@@ -468,24 +529,46 @@ void textBox::analyzeText(int startAtIndex, GLboolean forDeletionFlag) {
 		}
 	}
 
-	if (cursorIndex >= text.length()) cursorXCoord_textBoxSpace = lineWidth;
+	if (cursorIndex >= text.length()) {
+		cursorXCoord_textBoxSpace = lineWidth;
+		cursorRowIdx = (int)lineBreakIndices.size();
+	}
+
+	// Analyze the scroll bar
+	analyzeScrollBar();
 }
 
 // Set the cursor index, which is the index of the char it is to the left of
 // If the index is equal to the size of the string, then it's at the end
+// This function should always be followed by a call to analyzeText
 void textBox::setCursorIndex(int inCursorIndex) {
 	if (!isEditableFlag) return;
 	cursorIndex = (inCursorIndex > 0)? inCursorIndex : 0;
 	cursorIndex = (cursorIndex < (int)text.length())? cursorIndex : (int)text.length();
+}
 
-	// Find where the line starts
-	int lineStartIdx = 0;
-	int rowIdx = 0;
-	for (vector<int>::iterator iter = lineBreakIndices.begin(); iter != lineBreakIndices.end(); iter++) {
-		if (*iter <= cursorIndex) {
-			lineStartIdx = *iter;
-			rowIdx++;
-		}
-		else break;
+
+// If the text is longer than the height of the box, let the scroll bar pop up
+void textBox::analyzeScrollBar() {
+	int nRows = (int)lineBreakIndices.size() + 1;
+	GLfloat trueBoxHeight = textHeight * nRows;
+
+	// If we don't have a box height limit or if the text fully
+	//   fits in the box, just set the bar's relative length to
+	//   1 (and thus it won't draw)
+	if (boxDimensions.y <= 0 || trueBoxHeight <= boxDimensions.y) {
+		scrollBar.setBarRelativeLength(1.0f);
+		scrollBar.setBarRelativePosition(0.0f);
+	}
+	else {
+		GLfloat barLength = boxDimensions.y / trueBoxHeight;
+		scrollBar.setBarRelativeLength(barLength);
+
+		// Move the bar so that we stay with the cursor
+		GLfloat origPos = scrollBar.getBarRelativePosition();
+		GLfloat maxPos = (GLfloat) cursorRowIdx / nRows;
+		GLfloat minPos = textHeight / boxDimensions.y * (cursorRowIdx + 1) - 1.0f;
+		GLfloat newPos = fmin(fmax(origPos, minPos), maxPos);
+		scrollBar.setBarRelativePosition(newPos);
 	}
 }

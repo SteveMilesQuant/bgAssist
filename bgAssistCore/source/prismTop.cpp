@@ -530,6 +530,7 @@ void prismTop::fillVerticesAndUVs(GLboolean faceOnly) {
 
 // Load face image, either from a bmp or a dds
 void prismTop::loadFaceImage(const char * imagepath, GLboolean ddsFormatFlag) {
+	if (!copiedFaceImageFlag) glDeleteTextures(1, &faceImageId);
 	ddsFaceLoadedFlag = ddsFormatFlag;
 	if (ddsFormatFlag) faceImageId = ::loadDDS(imagepath);
 	else faceImageId = loadBMP_custom(imagepath);
@@ -539,6 +540,7 @@ void prismTop::loadFaceImage(const char * imagepath, GLboolean ddsFormatFlag) {
 
 // Load side image, either from a bmp or a dds
 void prismTop::loadSideImage(const char * imagepath, GLboolean ddsFormatFlag) {
+	if (!copiedSideImageFlag) glDeleteTextures(1, &sideImageId);
 	ddsSideLoadedFlag = ddsFormatFlag;
 	if (ddsFormatFlag) sideImageId = ::loadDDS(imagepath);
 	else sideImageId = loadBMP_custom(imagepath);

@@ -114,11 +114,16 @@ int main(void)
 	drawTextBox.textFont = &inkFreeFont;
 	drawTextBox.isEditableFlag = true;
 	drawTextBox.cursorWidth = 4.0f / screenWidth;
-	drawTextBox.textHeight = textHeight_screen;
-	drawTextBox.setBoxWidth(2.0f*(1.0f- marginWidth));
+	drawTextBox.setTextHeight(textHeight_screen);
+	drawTextBox.setBoxDimensions(vec2(2.0f*(1.0f- marginWidth), 5 * textHeight_screen));
 	drawTextBox.setText("Draw this text now! This is too long! Long! Long! Longgg");
-	drawTextBox.upperLeftCornerLocation = startPos;
-	drawTextBox.textColor = vec4(1, 0, 0, 1); // red, opaque
+	drawTextBox.setBoxLocation(startPos);
+	drawTextBox.setTextColor(vec4(1, 0, 0, 1)); // red, opaque
+
+	string imagePath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/test/images/";
+	string scrollBarImagePath = imagePath + "scrollBar_BMP_DXT3_1.DDS";
+	drawTextBox.setScrollBarWidth(5.0f * 2.0f / screenWidth);
+	drawTextBox.loadScrollBarImage(scrollBarImagePath.c_str());
 
 	do {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
