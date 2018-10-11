@@ -229,6 +229,25 @@ vec2 textBox::drawOneChar(char inChar, vec2 upperLeftCorner) {
 	vertices[2] = upperLeftCorner + vec2(0, -textHeight);
 	vertices[3] = upperRightCorner + vec2(0, -textHeight);
 
+	// Adjust for scrolling out of box
+	GLfloat uvOrigHeight = uvs[3].y - uvs[0].y;
+	GLfloat verticesOrigHeight = vertices[0].y - vertices[3].y;
+	GLfloat trimTop = vertices[0].y - upperLeftCornerLocation.y;
+	GLfloat trimBottom = (boxDimensions.y > 0)? upperLeftCornerLocation.y - boxDimensions.y - vertices[3].y : 0;
+	if (fmax(trimTop, trimBottom) >= verticesOrigHeight) goto Done; // nothing left to draw
+	if (trimTop > 0) {
+		for (int i = 0; i < 2; i++) {
+			vertices[i].y = vertices[i].y - trimTop;
+			uvs[i].y = uvs[i].y + trimTop / verticesOrigHeight * uvOrigHeight;
+		}
+	}
+	if (trimBottom > 0) {
+		for (int i = 2; i < 4; i++) {
+			vertices[i].y = vertices[i].y + trimBottom;
+			uvs[i].y = uvs[i].y - trimBottom / verticesOrigHeight * uvOrigHeight;
+		}
+	}
+
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(vec2), &vertices[0]);
 
@@ -261,6 +280,7 @@ vec2 textBox::drawOneChar(char inChar, vec2 upperLeftCorner) {
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+Done:
 	return upperRightCorner;
 }
 
