@@ -549,6 +549,7 @@ void textBox::setCursorIndex(int inCursorIndex) {
 
 
 // If the text is longer than the height of the box, let the scroll bar pop up
+// Position of line i = -boxHeight * barRelativePos + i * textHeight
 void textBox::analyzeScrollBar() {
 	int nRows = (int)lineBreakIndices.size() + 1;
 	GLfloat trueBoxHeight = textHeight * nRows;
