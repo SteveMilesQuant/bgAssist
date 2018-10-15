@@ -284,6 +284,7 @@ Done:
 	return upperRightCorner;
 }
 
+// Draw the cursor: cut off any part that's out of bounds
 void textBox::drawCursor(vec2 topLocation) {
 	if (!isEditableFlag) return;
 
@@ -294,13 +295,22 @@ void textBox::drawCursor(vec2 topLocation) {
 	}
 	if (!drawCursorFlag) return;
 
-	glUseProgram(cursorProgramId);
-	glUniform4f(cursorColorUniformId, textColor.r, textColor.g, textColor.b, textColor.a);
-
 	cursorVertices[0] = topLocation;
 	cursorVertices[1] = topLocation + vec2(cursorWidth, 0);
 	cursorVertices[2] = topLocation + vec2(0, -textHeight);
 	cursorVertices[3] = topLocation + vec2(cursorWidth, -textHeight);
+
+	// Don't draw any part of the cursor that's out of the current view
+	GLfloat maxY = upperLeftCornerLocation.y;
+	GLfloat minY = upperLeftCornerLocation.y - boxDimensions.y;
+	if (cursorVertices[0].y <= minY || cursorVertices[3].y >= maxY) return;
+	for (int i = 0; i < 2; i++) {
+		cursorVertices[i].y = fmin(cursorVertices[i].y, maxY);
+		cursorVertices[i + 2].y = fmax(cursorVertices[i+2].y, minY);
+	}
+
+	glUseProgram(cursorProgramId);
+	glUniform4f(cursorColorUniformId, textColor.r, textColor.g, textColor.b, textColor.a);
 
 	glBindBuffer(GL_ARRAY_BUFFER, cursorVertexBufferId);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, cursorVertices.size() * sizeof(vec2), &cursorVertices[0]);
@@ -319,7 +329,7 @@ void textBox::drawCursor(vec2 topLocation) {
 
 }
 
-
+// Type a letter at cursor
 void textBox::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoint, int mods) {
 	if (!isEditableFlag) return;
 	char charInsert = (char) codepoint;
@@ -446,6 +456,8 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 	}
 }
 
+// Click on text box: move cursor to that position
+// Click on scroll bar in non-bar space: jump scroll
 void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
 	if (!isEditableFlag || action != GLFW_PRESS) return;
 
@@ -497,6 +509,21 @@ void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int ac
 		lineWidth += charWidth;
 	}
 	cursorXCoord_textBoxSpace = lineWidth;
+}
+
+
+// Scroll text
+void textBox::callGlfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+	int nRows = (int)lineBreakIndices.size() + 1;
+	GLfloat trueBoxHeight = textHeight * nRows;
+	if (boxDimensions.y <= 0 || trueBoxHeight <= boxDimensions.y) return;
+
+	// For each click up or down, move one line
+	GLfloat scrollDiff = 1.0f / nRows;
+	GLfloat origScrollPos = scrollBar.getBarRelativePosition();
+	GLfloat newScrollPos = origScrollPos - yoffset * scrollDiff;
+	scrollBar.setBarRelativePosition(newScrollPos);
+
 }
 
 

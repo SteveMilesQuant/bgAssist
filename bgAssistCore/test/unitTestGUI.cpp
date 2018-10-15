@@ -30,6 +30,10 @@ void worldMouseButtonCallback(GLFWwindow* window, int button, int action, int mo
 	drawTextBox.callGlfwMouseButtonCallback(window, button, action, mods);
 }
 
+void worldScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+	drawTextBox.callGlfwScrollCallback(window, xoffset, yoffset);
+}
+
 
 int main(void)
 {
@@ -82,6 +86,7 @@ int main(void)
 	glfwSetCharModsCallback(window, worldCharCallback);
 	glfwSetKeyCallback(window, worldKeyCallback);
 	glfwSetMouseButtonCallback(window, worldMouseButtonCallback);
+	glfwSetScrollCallback(window, worldScrollCallback);
 
 	// Black background
 	glClearColor(0, 0, 0, 1);

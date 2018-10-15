@@ -40,6 +40,7 @@ public:
 	void callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoint, int mods);
 	void callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 	void callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+	void callGlfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 private:
 	string text;
