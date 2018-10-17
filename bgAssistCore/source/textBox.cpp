@@ -480,7 +480,7 @@ void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int ac
 	}
 
 	// If we clicked on the scroll bar, use its callback
-	if (clickPosition_world.x > upperLeftCornerLocation.x + boxEffectiveWidth) {
+	if (action == GLFW_RELEASE || clickPosition_world.x > upperLeftCornerLocation.x + boxEffectiveWidth) {
 		return scrollBar.callGlfwMouseButtonCallback(window, button, action, mods);
 	}
 

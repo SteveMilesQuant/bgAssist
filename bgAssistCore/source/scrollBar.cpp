@@ -234,14 +234,15 @@ void scrollBar::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int 
 }
 
 
+// Drag the scroll bar: just keep up with the mouse
 void scrollBar::callGlfwCursorPosCallback(GLFWwindow* window, double x, double y) {
 	if (!draggingFlag) return;
+
 	int screenWidth, screenHeight;
 	glfwGetWindowSize(window, &screenWidth, &screenHeight);
 	GLfloat y_worldPos = 1.0f - 2.0f * (GLfloat)y / screenHeight;;
 	GLfloat y_change = y_worldPos - dragLocationBegin.y;
-	vec2 origBarUpperLeftCorner = upperLeftCornerLocation - vec2(0, dragBarPositionBegin*dimensions.y);
-	vec2 newBarUpperLeftCorner = vec2(origBarUpperLeftCorner.x, origBarUpperLeftCorner.y + y_change);
-	GLfloat newBarPosition = (upperLeftCornerLocation.y - newBarUpperLeftCorner.y)/ dimensions.y;
+
+	GLfloat newBarPosition = dragBarPositionBegin - y_change / dimensions.y;
 	setBarRelativePosition(newBarPosition);
 }
