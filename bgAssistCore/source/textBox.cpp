@@ -164,7 +164,7 @@ void textBox::setBoxDimensions(vec2 inBoxDim) {
 	vec2 origDim = scrollBar.getDimensions();
 	boxEffectiveWidth = boxDimensions.x - origDim.x;
 	scrollBar.setDimensions(vec2(origDim.x, boxDimensions.y));
-	scrollBar.setLocation(upperLeftCornerLocation + vec2(boxDimensions.x, 0));
+	scrollBar.setLocation(upperLeftCornerLocation + vec2(boxEffectiveWidth, 0));
 	analyzeText(0, false); // fully reanalyze the text for line breaks
 }
 
@@ -172,6 +172,7 @@ void textBox::setScrollBarWidth(GLfloat inWidth) {
 	boxEffectiveWidth = boxDimensions.x - inWidth; 
 	vec2 origDim = scrollBar.getDimensions();
 	scrollBar.setDimensions(vec2(inWidth, boxDimensions.y));
+	scrollBar.setLocation(upperLeftCornerLocation + vec2(boxEffectiveWidth, 0));
 	analyzeText(0, false); // fully reanalyze the text for line breaks
 }
 
@@ -184,6 +185,7 @@ vec2 textBox::calcEffectiveLocation() {
 	return upperLeftCornerLocation + vec2(0, posAdj);
 }
 
+// Draw text and maybe scroll bar
 void textBox::draw() {
 	
 	passBuffersToGLM();
@@ -214,10 +216,11 @@ void textBox::draw() {
 	glDisableVertexAttribArray(1);
 
 	// Now draw the scroll bar
-	// TODO: need conditional
 	scrollBar.draw();
 }
 
+// Draw one character at a time
+// Make sure we don't draw anything that has crept outside the box
 vec2 textBox::drawOneChar(char inChar, vec2 upperLeftCorner) {
 	float charWidth = textFont->getCharUnitWidth(inChar) * textHeight;
 
@@ -459,25 +462,32 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 // Click on text box: move cursor to that position
 // Click on scroll bar in non-bar space: jump scroll
 void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-	if (!isEditableFlag || action != GLFW_PRESS) return;
 
 	int screenWidth, screenHeight;
 	double x, y;
 	vec2 clickPosition_world;
 	glfwGetWindowSize(window, &screenWidth, &screenHeight);
 	glfwGetCursorPos(window, &x, &y);
+	clickPosition_world.x = 2.0f * (GLfloat)x / screenWidth - 1.0f;
+	clickPosition_world.y = 1.0f - 2.0f * (GLfloat)y / screenHeight;
 
 	// If we haven't clicked on the box, return
 	if (clickPosition_world.x < upperLeftCornerLocation.x ||
 		clickPosition_world.x > upperLeftCornerLocation.x + boxDimensions.x ||
 		clickPosition_world.y > upperLeftCornerLocation.y ||
-		clickPosition_world.y > upperLeftCornerLocation.y - boxDimensions.y) {
+		clickPosition_world.y < upperLeftCornerLocation.y - boxDimensions.y) {
 		return;
 	}
 
+	// If we clicked on the scroll bar, use its callback
+	if (clickPosition_world.x > upperLeftCornerLocation.x + boxEffectiveWidth) {
+		return scrollBar.callGlfwMouseButtonCallback(window, button, action, mods);
+	}
+
+	// Text box only cares about presses, not releases (for now)
+	if (!isEditableFlag || action != GLFW_PRESS) return;
+
 	vec2 effectiveUpperLeftCorner = calcEffectiveLocation();
-	clickPosition_world.x = 2.0f * (GLfloat)x / screenWidth - 1.0f;
-	clickPosition_world.y = 1.0f - 2.0f * (GLfloat)y / screenHeight;
 	vec2 tempVec = clickPosition_world - effectiveUpperLeftCorner;
 	vec2 clickPosition_textbox(tempVec.x, -tempVec.y); // need to reverse direction of y again
 
@@ -512,6 +522,11 @@ void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int ac
 }
 
 
+void textBox::callGlfwCursorPosCallback(GLFWwindow* window, double x, double y) {
+	scrollBar.callGlfwCursorPosCallback(window, x, y);
+}
+
+
 // Scroll text
 void textBox::callGlfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
 	int nRows = (int)lineBreakIndices.size() + 1;
@@ -519,11 +534,8 @@ void textBox::callGlfwScrollCallback(GLFWwindow* window, double xoffset, double 
 	if (boxDimensions.y <= 0 || trueBoxHeight <= boxDimensions.y) return;
 
 	// For each click up or down, move one line
-	GLfloat scrollDiff = 1.0f / nRows;
-	GLfloat origScrollPos = scrollBar.getBarRelativePosition();
-	GLfloat newScrollPos = origScrollPos - yoffset * scrollDiff;
-	scrollBar.setBarRelativePosition(newScrollPos);
-
+	scrollBar.scrollRelativeBarJump = 1.0f / nRows;
+	scrollBar.callGlfwScrollCallback(window, xoffset, yoffset);
 }
 
 

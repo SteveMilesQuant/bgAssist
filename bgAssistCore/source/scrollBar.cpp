@@ -13,6 +13,7 @@ using namespace glm;
 
 scrollBar::scrollBar() {
 	barColor = vec4(1);
+	scrollRelativeBarJump = 0;
 
 	upperLeftCornerLocation = vec2(0, 0);
 	dimensions = vec2(0, 0);
@@ -35,12 +36,17 @@ scrollBar::scrollBar() {
 
 	barImageId = -1;
 	imageCopiedFlag = false;
+
+	draggingFlag = false;
+	dragLocationBegin = vec2(0);
+	dragBarPositionBegin = 0;
 }
 
 void scrollBar::copyScrollBar(const scrollBar & inScrollBar) {
 	if (this == &inScrollBar) return;
 
 	barColor = inScrollBar.barColor;
+	scrollRelativeBarJump = inScrollBar.scrollRelativeBarJump;
 
 	upperLeftCornerLocation = inScrollBar.upperLeftCornerLocation;
 	dimensions = inScrollBar.dimensions;
@@ -63,6 +69,10 @@ void scrollBar::copyScrollBar(const scrollBar & inScrollBar) {
 
 	barImageId = inScrollBar.barImageId;
 	imageCopiedFlag = true;
+
+	draggingFlag = false;
+	dragLocationBegin = vec2(0);
+	dragBarPositionBegin = 0;
 }
 
 scrollBar::~scrollBar() {
@@ -184,3 +194,54 @@ void scrollBar::draw() {
 
 }
 
+
+void scrollBar::callGlfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+	GLfloat newBarPosition = barRelativePosition - (GLfloat)yoffset * scrollRelativeBarJump;
+	setBarRelativePosition(newBarPosition);
+}
+
+
+// Click above or below: scroll shift
+// Click on bar: start drag
+void scrollBar::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+	int screenWidth, screenHeight;
+	double x, y;
+	vec2 clickPosition_world;
+	glfwGetWindowSize(window, &screenWidth, &screenHeight);
+	glfwGetCursorPos(window, &x, &y);
+	clickPosition_world.x = 2.0f * (GLfloat)x / screenWidth - 1.0f;
+	clickPosition_world.y = 1.0f - 2.0f * (GLfloat)y / screenHeight;
+
+	double topOfBar = upperLeftCornerLocation.y - barRelativePosition * dimensions.y;
+	double bottomOfBar = topOfBar - barRelativeLength * dimensions.y;
+
+	if (clickPosition_world.y > topOfBar) {
+		if (action == GLFW_PRESS) callGlfwScrollCallback(window, 0, 1);
+	}
+	else if (clickPosition_world.y < bottomOfBar) {
+		if (action == GLFW_PRESS) callGlfwScrollCallback(window, 0, -1);
+	}
+	else {
+		if (action == GLFW_PRESS) {
+			draggingFlag = true;
+			dragLocationBegin = clickPosition_world;
+			dragBarPositionBegin = barRelativePosition;
+		}
+		else {
+			draggingFlag = false;
+		}
+	}
+}
+
+
+void scrollBar::callGlfwCursorPosCallback(GLFWwindow* window, double x, double y) {
+	if (!draggingFlag) return;
+	int screenWidth, screenHeight;
+	glfwGetWindowSize(window, &screenWidth, &screenHeight);
+	GLfloat y_worldPos = 1.0f - 2.0f * (GLfloat)y / screenHeight;;
+	GLfloat y_change = y_worldPos - dragLocationBegin.y;
+	vec2 origBarUpperLeftCorner = upperLeftCornerLocation - vec2(0, dragBarPositionBegin*dimensions.y);
+	vec2 newBarUpperLeftCorner = vec2(origBarUpperLeftCorner.x, origBarUpperLeftCorner.y + y_change);
+	GLfloat newBarPosition = (upperLeftCornerLocation.y - newBarUpperLeftCorner.y)/ dimensions.y;
+	setBarRelativePosition(newBarPosition);
+}

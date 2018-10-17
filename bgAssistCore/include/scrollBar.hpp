@@ -12,6 +12,7 @@ using namespace glm;
 class scrollBar {
 public:
 	vec4 barColor;
+	GLfloat scrollRelativeBarJump;
 
 	scrollBar();
 	~scrollBar();
@@ -29,6 +30,9 @@ public:
 
 	void loadImage(const char * imagePath);
 	void draw();
+	void callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+	void callGlfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+	void callGlfwCursorPosCallback(GLFWwindow* window, double x, double y);
 
 private:
 	vec2 upperLeftCornerLocation;
@@ -50,6 +54,10 @@ private:
 
 	GLuint barImageId;
 	GLboolean imageCopiedFlag;
+
+	GLboolean draggingFlag; // are we dragging this right now?
+	vec2 dragLocationBegin;
+	GLfloat dragBarPositionBegin;
 
 	void copyScrollBar(const scrollBar & inScrollBar);
 	void fillVerticesAndUvs(GLboolean verticesOnlyFlag);

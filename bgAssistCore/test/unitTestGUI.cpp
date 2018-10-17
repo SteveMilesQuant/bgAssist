@@ -34,6 +34,10 @@ void worldScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
 	drawTextBox.callGlfwScrollCallback(window, xoffset, yoffset);
 }
 
+void worldCursorPosCallback(GLFWwindow* window, double x, double y) {
+	drawTextBox.callGlfwCursorPosCallback(window, x, y);
+}
+
 
 int main(void)
 {
@@ -87,6 +91,7 @@ int main(void)
 	glfwSetKeyCallback(window, worldKeyCallback);
 	glfwSetMouseButtonCallback(window, worldMouseButtonCallback);
 	glfwSetScrollCallback(window, worldScrollCallback);
+	glfwSetCursorPosCallback(window, worldCursorPosCallback);
 
 	// Black background
 	glClearColor(0, 0, 0, 1);
@@ -127,7 +132,7 @@ int main(void)
 
 	string imagePath = "C:/Users/Steve/Desktop/programming/bgAssist/bgAssistCore/test/images/";
 	string scrollBarImagePath = imagePath + "scrollBar_BMP_DXT3_1.DDS";
-	drawTextBox.setScrollBarWidth(5.0f * 2.0f / screenWidth);
+	drawTextBox.setScrollBarWidth(10.0f * 2.0f / screenWidth);
 	drawTextBox.loadScrollBarImage(scrollBarImagePath.c_str());
 
 	do {
