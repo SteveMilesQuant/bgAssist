@@ -1,6 +1,7 @@
 #include <stdafx.h>
 
 #include <textBox.hpp>
+#include <glfwExt.hpp>
 
 #include <algorithm>
 
@@ -463,15 +464,9 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 // Click on scroll bar in non-bar space: jump scroll
 void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
 
-	int screenWidth, screenHeight;
-	double x, y;
-	vec2 clickPosition_world;
-	glfwGetWindowSize(window, &screenWidth, &screenHeight);
-	glfwGetCursorPos(window, &x, &y);
-	clickPosition_world.x = 2.0f * (GLfloat)x / screenWidth - 1.0f;
-	clickPosition_world.y = 1.0f - 2.0f * (GLfloat)y / screenHeight;
-
 	// If we haven't clicked on the box, return
+	// TODO: handle this with a boundary checker
+	vec2 clickPosition_world = screenPosTo2DCoord(window);
 	if (clickPosition_world.x < upperLeftCornerLocation.x ||
 		clickPosition_world.x > upperLeftCornerLocation.x + boxDimensions.x ||
 		clickPosition_world.y > upperLeftCornerLocation.y ||

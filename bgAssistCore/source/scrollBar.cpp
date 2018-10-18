@@ -8,6 +8,7 @@ using namespace glm;
 #include <scrollBar.hpp>
 
 #include <texture.hpp>
+#include <glfwExt.hpp>
 
 #include <math.h>
 
@@ -204,32 +205,26 @@ void scrollBar::callGlfwScrollCallback(GLFWwindow* window, double xoffset, doubl
 // Click above or below: scroll shift
 // Click on bar: start drag
 void scrollBar::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-	int screenWidth, screenHeight;
-	double x, y;
-	vec2 clickPosition_world;
-	glfwGetWindowSize(window, &screenWidth, &screenHeight);
-	glfwGetCursorPos(window, &x, &y);
-	clickPosition_world.x = 2.0f * (GLfloat)x / screenWidth - 1.0f;
-	clickPosition_world.y = 1.0f - 2.0f * (GLfloat)y / screenHeight;
+	// On release, just stop dragging (we don't care where we released)
+	if (action == GLFW_RELEASE) {
+		draggingFlag = false;
+		return;
+	}
 
+	vec2 clickPosition_world = screenPosTo2DCoord(window);
 	double topOfBar = upperLeftCornerLocation.y - barRelativePosition * dimensions.y;
 	double bottomOfBar = topOfBar - barRelativeLength * dimensions.y;
 
 	if (clickPosition_world.y > topOfBar) {
-		if (action == GLFW_PRESS) callGlfwScrollCallback(window, 0, 1);
+		callGlfwScrollCallback(window, 0, 1);
 	}
 	else if (clickPosition_world.y < bottomOfBar) {
-		if (action == GLFW_PRESS) callGlfwScrollCallback(window, 0, -1);
+		callGlfwScrollCallback(window, 0, -1);
 	}
 	else {
-		if (action == GLFW_PRESS) {
-			draggingFlag = true;
-			dragLocationBegin = clickPosition_world;
-			dragBarPositionBegin = barRelativePosition;
-		}
-		else {
-			draggingFlag = false;
-		}
+		draggingFlag = true;
+		dragLocationBegin = clickPosition_world;
+		dragBarPositionBegin = barRelativePosition;
 	}
 }
 
@@ -238,10 +233,8 @@ void scrollBar::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int 
 void scrollBar::callGlfwCursorPosCallback(GLFWwindow* window, double x, double y) {
 	if (!draggingFlag) return;
 
-	int screenWidth, screenHeight;
-	glfwGetWindowSize(window, &screenWidth, &screenHeight);
-	GLfloat y_worldPos = 1.0f - 2.0f * (GLfloat)y / screenHeight;;
-	GLfloat y_change = y_worldPos - dragLocationBegin.y;
+	vec2 cursorPosition_world = screenPosTo2DCoord(window, x, y);
+	GLfloat y_change = cursorPosition_world.y - dragLocationBegin.y;
 
 	GLfloat newBarPosition = dragBarPositionBegin - y_change / dimensions.y;
 	setBarRelativePosition(newBarPosition);

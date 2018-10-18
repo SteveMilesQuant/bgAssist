@@ -59,4 +59,5 @@ bool testRayOBBIntersection(
 	float& intersection_distance // Output : distance between ray_origin and the intersection with the OBB
 );
 
-
+vec2 screenPosTo2DCoord(GLFWwindow* window);
+vec2 screenPosTo2DCoord(GLFWwindow* window, double x, double y);

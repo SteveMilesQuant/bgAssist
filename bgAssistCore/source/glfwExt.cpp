@@ -195,5 +195,18 @@ bool testRayOBBIntersection(
 
 }
 
-
+// Take the cursor position and convert into 2D coordinates
+vec2 screenPosTo2DCoord(GLFWwindow* window) {
+	double x, y;
+	glfwGetCursorPos(window, &x, &y);
+	return screenPosTo2DCoord(window, x, y);
+}
+vec2 screenPosTo2DCoord(GLFWwindow* window, double x, double y) {
+	vec2 clickPosition_world;
+	int screenWidth, screenHeight;
+	glfwGetWindowSize(window, &screenWidth, &screenHeight);
+	clickPosition_world.x = 2.0f * (GLfloat)x / screenWidth - 1.0f;
+	clickPosition_world.y = 1.0f - 2.0f * (GLfloat)y / screenHeight;
+	return clickPosition_world;
+}
 
