@@ -41,6 +41,9 @@ textBox::textBox() {
 	drawCursorFlag = false;
 	cursorLastToggledTime = glfwGetTime();
 	cursorRowIdx = 0;
+
+	// scrollBar has its own initializer
+	isSelectedFlag = false;
 }
 
 void textBox::copyTextBox(const textBox & inTextBox) {
@@ -83,6 +86,7 @@ void textBox::copyTextBox(const textBox & inTextBox) {
 	cursorRowIdx = inTextBox.cursorRowIdx;
 
 	scrollBar = inTextBox.scrollBar;
+	isSelectedFlag = false;
 }
 
 textBox::~textBox() {
@@ -290,7 +294,8 @@ Done:
 
 // Draw the cursor: cut off any part that's out of bounds
 void textBox::drawCursor(vec2 topLocation) {
-	if (!isEditableFlag) return;
+	// Don't draw the cursor if the text box isn't selected
+	if (!isEditableFlag || !isSelectedFlag) return;
 
 	double newTime = glfwGetTime();
 	if (newTime - cursorLastToggledTime > cursorToggleTime) {
@@ -473,8 +478,10 @@ void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int ac
 		clickPosition_world.y < upperLeftCornerLocation.y - boxDimensions.y) {
 		return;
 	}
+	isSelectedFlag = true;
 
 	// If we clicked on the scroll bar, use its callback
+	// Also tell the scroll bar when we release
 	if (action == GLFW_RELEASE || clickPosition_world.x > upperLeftCornerLocation.x + boxEffectiveWidth) {
 		return scrollBar.callGlfwMouseButtonCallback(window, button, action, mods);
 	}
@@ -531,6 +538,17 @@ void textBox::callGlfwScrollCallback(GLFWwindow* window, double xoffset, double 
 	// For each click up or down, move one line
 	scrollBar.scrollRelativeBarJump = 1.0f / nRows;
 	scrollBar.callGlfwScrollCallback(window, xoffset, yoffset);
+}
+
+// Deselect
+void textBox::deselect() {
+	isSelectedFlag = false;
+	scrollBar.deselect();
+}
+
+// Test whether a 2D point is inside the bounds of this object
+GLboolean textBox::testPointInBounds(vec2 testPoint) {
+	return testPointInBox(testPoint, upperLeftCornerLocation, boxDimensions);
 }
 
 

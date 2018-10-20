@@ -196,6 +196,7 @@ void scrollBar::draw() {
 }
 
 
+// Scroll up or down is a shift in the bar
 void scrollBar::callGlfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
 	GLfloat newBarPosition = barRelativePosition - (GLfloat)yoffset * scrollRelativeBarJump;
 	setBarRelativePosition(newBarPosition);
@@ -239,3 +240,32 @@ void scrollBar::callGlfwCursorPosCallback(GLFWwindow* window, double x, double y
 	GLfloat newBarPosition = dragBarPositionBegin - y_change / dimensions.y;
 	setBarRelativePosition(newBarPosition);
 }
+
+// We don't do anything for text input in the scroll bar
+void scrollBar::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoint, int mods) {
+	return;
+}
+
+// Up key or down key is a scroll
+void scrollBar::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (action != GLFW_PRESS) return;
+
+	int scrollDirection = 0;
+	switch(key) {
+		case GLFW_KEY_UP: scrollDirection = 1; break;
+		case GLFW_KEY_DOWN: scrollDirection = -1; break;
+	}
+	if (scrollDirection) callGlfwScrollCallback(window, 0, scrollDirection);
+}
+
+// If they click off the scroll bar, make sure we don't continue dragging
+void scrollBar::deselect() {
+	draggingFlag = false;
+}
+
+// Test whether a point is in the scroll bar's bounds
+GLboolean scrollBar::testPointInBounds(vec2 testPoint) {
+	return testPointInBox(testPoint, upperLeftCornerLocation, dimensions);
+}
+
+

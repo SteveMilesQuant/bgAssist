@@ -30,9 +30,13 @@ public:
 
 	void loadImage(const char * imagePath);
 	void draw();
+	void callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoint, int mods);
+	void callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 	void callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	void callGlfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 	void callGlfwCursorPosCallback(GLFWwindow* window, double x, double y);
+	void deselect();
+	GLboolean testPointInBounds(vec2 testPoint); // is this point in the object's bounds?
 
 private:
 	vec2 upperLeftCornerLocation;

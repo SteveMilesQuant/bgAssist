@@ -61,3 +61,5 @@ bool testRayOBBIntersection(
 
 vec2 screenPosTo2DCoord(GLFWwindow* window);
 vec2 screenPosTo2DCoord(GLFWwindow* window, double x, double y);
+
+GLboolean testPointInBox(vec2 testPoint, vec2 boxUpperLeftCornerLocation, vec2 boxDimensions);

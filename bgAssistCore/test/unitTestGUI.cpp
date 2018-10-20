@@ -15,27 +15,40 @@ using namespace std;
 #include <glm/gtx/transform.hpp>
 using namespace glm;
 
-
-textBox drawTextBox;
+typedef textBox allObjectTypes;
+vector<allObjectTypes *> objectList;
+allObjectTypes * selectedObject = NULL;
 
 void worldCharCallback(GLFWwindow* window, unsigned int codepoint, int mods) {
-	drawTextBox.callGlfwCharModsCallback(window, codepoint, mods);
+	if (selectedObject) selectedObject->callGlfwCharModsCallback(window, codepoint, mods);
 }
 
 void worldKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	drawTextBox.callGlfwKeyCallback(window, key, scancode, action, mods);
+	if (selectedObject) selectedObject->callGlfwKeyCallback(window, key, scancode, action, mods);
 }
 
 void worldMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-	drawTextBox.callGlfwMouseButtonCallback(window, button, action, mods);
+	allObjectTypes * origSelectedObject = selectedObject;
+	if (action == GLFW_PRESS) {
+		selectedObject = NULL;
+		vec2 clickPosition_world = screenPosTo2DCoord(window);
+		for (int i = 0; i < objectList.size(); i++) {
+			if (objectList[i] && objectList[i]->testPointInBounds(clickPosition_world)) {
+				selectedObject = objectList[i];
+				break;
+			}
+		}
+	}
+	if (origSelectedObject && origSelectedObject != selectedObject) origSelectedObject->deselect();
+	if (selectedObject) selectedObject->callGlfwMouseButtonCallback(window, button, action, mods);
 }
 
 void worldScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-	drawTextBox.callGlfwScrollCallback(window, xoffset, yoffset);
+	if (selectedObject) selectedObject->callGlfwScrollCallback(window, xoffset, yoffset);
 }
 
 void worldCursorPosCallback(GLFWwindow* window, double x, double y) {
-	drawTextBox.callGlfwCursorPosCallback(window, x, y);
+	if (selectedObject) selectedObject->callGlfwCursorPosCallback(window, x, y);
 }
 
 
@@ -119,6 +132,12 @@ int main(void)
 	float textHeight_screen = 48.0f * 2.0f / screenHeight;
 	vec2 startPos(-1.0f + marginWidth, 1.0f - textHeight_screen);
 
+	// Reset global objects
+	objectList.clear();
+	selectedObject = NULL;
+
+	// Create our text box
+	textBox drawTextBox;
 	drawTextBox.setTextProgramId(twodimImageProgramId);
 	drawTextBox.setCursorProgramId(twodimSoloColorProgramId);
 	drawTextBox.textFont = &inkFreeFont;
@@ -134,6 +153,7 @@ int main(void)
 	string scrollBarImagePath = imagePath + "scrollBar_BMP_DXT3_1.DDS";
 	drawTextBox.setScrollBarWidth(10.0f * 2.0f / screenWidth);
 	drawTextBox.loadScrollBarImage(scrollBarImagePath.c_str());
+	objectList.push_back(&drawTextBox);
 
 	do {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -147,6 +167,7 @@ int main(void)
 		glfwWindowShouldClose(window) == 0);
 
 	// Clean up
+	objectList.clear();
 	glDeleteProgram(twodimImageProgramId);
 	glDeleteVertexArrays(1, &VertexArrayID);
 	glfwDestroyWindow(window);

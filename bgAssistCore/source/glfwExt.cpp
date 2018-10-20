@@ -210,3 +210,14 @@ vec2 screenPosTo2DCoord(GLFWwindow* window, double x, double y) {
 	return clickPosition_world;
 }
 
+// Test whether a point is in a 2d box
+GLboolean testPointInBox(vec2 testPoint, vec2 boxUpperLeftCornerLocation, vec2 boxDimensions) {
+	if (testPoint.x < boxUpperLeftCornerLocation.x ||
+		testPoint.x > boxUpperLeftCornerLocation.x + boxDimensions.x ||
+		testPoint.y > boxUpperLeftCornerLocation.y ||
+		testPoint.y < boxUpperLeftCornerLocation.y - boxDimensions.y) {
+		return false;
+	}
+	else return true;
+}
+

@@ -42,6 +42,8 @@ public:
 	void callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	void callGlfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 	void callGlfwCursorPosCallback(GLFWwindow* window, double x, double y);
+	void deselect();
+	GLboolean testPointInBounds(vec2 testPoint); // is this point in the object's bounds?
 
 private:
 	string text;
@@ -74,6 +76,7 @@ private:
 	int cursorRowIdx;
 
 	scrollBar scrollBar;
+	GLboolean isSelectedFlag; // is this object selected?
 
 	void passBuffersToGLM();
 	void copyTextBox(const textBox & inTextBox);
