@@ -159,6 +159,12 @@ void textBox::setTextHeight(GLfloat inHeight) {
 	analyzeScrollBar();
 }
 
+void textBox::setFont(font * inTextFont) {
+	if (!inTextFont) return;
+	textFont = inTextFont;
+	analyzeText(0, false); // fully reanalyze the text for line breaks
+}
+
 void textBox::setBoxLocation(vec2 inUpperLeftCornerLocation) {
 	upperLeftCornerLocation = inUpperLeftCornerLocation;
 	scrollBar.setLocation(upperLeftCornerLocation + vec2(boxEffectiveWidth, 0));
@@ -192,6 +198,7 @@ vec2 textBox::calcEffectiveLocation() {
 
 // Draw text and maybe scroll bar
 void textBox::draw() {
+	if (!textFont) return;
 	
 	passBuffersToGLM();
 
@@ -364,7 +371,7 @@ void textBox::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoin
 // New line for Enter button
 // Arrow buttons to move cursor
 void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	if (!isEditableFlag || action == GLFW_RELEASE) return;
+	if (!isEditableFlag || action == GLFW_RELEASE || !textFont) return;
 
 	int i;
 
@@ -468,16 +475,9 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 // Click on text box: move cursor to that position
 // Click on scroll bar in non-bar space: jump scroll
 void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+	if (!textFont) return;
 
-	// If we haven't clicked on the box, return
-	// TODO: handle this with a boundary checker
-	vec2 clickPosition_world = screenPosTo2DCoord(window);
-	if (clickPosition_world.x < upperLeftCornerLocation.x ||
-		clickPosition_world.x > upperLeftCornerLocation.x + boxDimensions.x ||
-		clickPosition_world.y > upperLeftCornerLocation.y ||
-		clickPosition_world.y < upperLeftCornerLocation.y - boxDimensions.y) {
-		return;
-	}
+	// Note that we've been selected (we won't draw text cursor if we haven't)
 	isSelectedFlag = true;
 
 	// If we clicked on the scroll bar, use its callback
@@ -554,6 +554,8 @@ GLboolean textBox::testPointInBounds(vec2 testPoint) {
 
 // Analyzes text for line breaks and also figures out where the cursor belongs in the worldspace
 void textBox::analyzeText(int startAtIndex, GLboolean forDeletionFlag) {
+	if (!textFont) return;
+
 	GLboolean canBreakNow = !forDeletionFlag;
 	int i;
 	for (i = (int)lineBreakIndices.size()-1; i >= 0; i--) {

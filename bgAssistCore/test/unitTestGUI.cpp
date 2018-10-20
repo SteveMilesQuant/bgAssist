@@ -4,10 +4,12 @@
 #include <texture.hpp>
 #include <font.hpp>
 #include <textBox.hpp>
+#include <scrollBar.hpp>
 
 #include <fstream>
 #include <string>
 #include <vector>
+#include <any>
 using namespace std;
 
 #include <GL/glew.h>
@@ -15,7 +17,7 @@ using namespace std;
 #include <glm/gtx/transform.hpp>
 using namespace glm;
 
-typedef textBox allObjectTypes;
+typedef textBox allObjectTypes; // TODO: write a container for all object types
 vector<allObjectTypes *> objectList;
 allObjectTypes * selectedObject = NULL;
 
@@ -140,7 +142,7 @@ int main(void)
 	textBox drawTextBox;
 	drawTextBox.setTextProgramId(twodimImageProgramId);
 	drawTextBox.setCursorProgramId(twodimSoloColorProgramId);
-	drawTextBox.textFont = &inkFreeFont;
+	drawTextBox.setFont(&inkFreeFont);
 	drawTextBox.isEditableFlag = true;
 	drawTextBox.cursorWidth = 4.0f / screenWidth;
 	drawTextBox.setTextHeight(textHeight_screen);

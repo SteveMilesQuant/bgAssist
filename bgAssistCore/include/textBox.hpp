@@ -14,7 +14,6 @@ using namespace glm;
 
 class textBox {
 public:
-	font * textFont;
 	GLboolean isEditableFlag;
 	GLfloat cursorWidth;
 	double cursorToggleTime;
@@ -34,7 +33,7 @@ public:
 	void setScrollBarWidth(GLfloat inWidth);
 	void loadScrollBarImage(const char * imagePath) { scrollBar.loadImage(imagePath); }
 	void setTextHeight(GLfloat inHeight);
-	// TODO: create setFont
+	void setFont(font * inTextFont);
 
 	void draw();
 	void callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoint, int mods);
@@ -49,6 +48,7 @@ private:
 	string text;
 	vec4 textColor;
 	GLfloat textHeight;
+	font * textFont;
 	vec2 upperLeftCornerLocation;
 	vec2 boxDimensions;
 	GLfloat boxEffectiveWidth; // width minus the scroll bar
