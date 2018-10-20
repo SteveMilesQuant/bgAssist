@@ -482,7 +482,8 @@ void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int ac
 
 	// If we clicked on the scroll bar, use its callback
 	// Also tell the scroll bar when we release
-	if (action == GLFW_RELEASE || clickPosition_world.x > upperLeftCornerLocation.x + boxEffectiveWidth) {
+	vec2 clickPosition_world = screenPosTo2DCoord(window);
+	if (action == GLFW_RELEASE || scrollBar.testPointInBounds(clickPosition_world)) {
 		return scrollBar.callGlfwMouseButtonCallback(window, button, action, mods);
 	}
 
