@@ -80,12 +80,14 @@ private:
 	scrollBar scrollBar;
 	GLboolean isSelectedFlag; // is this object selected?
 	GLboolean draggingFlag; // are we dragging?
+	GLboolean movingFlag; // are we moving text?
+	int movingTextCursorIndex; // the cursorIndex when we started moving text
 
 	void passBuffersToGLM();
 	void copyTextBox(const textBox & inTextBox);
 	vec2 drawOneChar(char inChar, vec2 upperLeftCorner); // returns the upper right corner
 	void drawCursor(vec2 topLocation);
-	void analyzeText(int startAtIndex, GLboolean forDeletionFlag);
+	void analyzeText(int startAtIndex);
 	void analyzeScrollBar();
 	void setCursorIndex(int inCursorIndex);
 	vec2 calcEffectiveLocation();
