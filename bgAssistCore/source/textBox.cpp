@@ -369,8 +369,16 @@ void textBox::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoin
 	if (!isEditableFlag) return;
 	char charInsert = (char) codepoint;
 
-	text.insert(cursorIndex, &charInsert, 1);
-	setCursorIndex(cursorIndex + 1);
+	if (cursorIndex == dragCursorIndex) {
+		text.insert(cursorIndex, &charInsert, 1);
+		setCursorIndex(cursorIndex + 1);
+	}
+	else {
+		int dragMin = std::min(dragCursorIndex, cursorIndex);
+		int dragMax = std::max(dragCursorIndex, cursorIndex);
+		text.replace(dragMin, dragMax - dragMin, 1, charInsert);
+		setCursorIndex(dragMin + 1);
+	}
 	dragCursorIndex = cursorIndex;
 	if (charInsert == '-' || charInsert == ' ' || charInsert == '\n') {
 		int i, startAnalysisAt;
@@ -398,22 +406,44 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 	switch (key) {
 	case GLFW_KEY_DELETE:
 		if (text.length() > 0 && cursorIndex < text.length()) {
-			text.erase(cursorIndex, 1);
+			if (cursorIndex == dragCursorIndex) text.erase(cursorIndex, 1);
+			else {
+				int dragMin = std::min(dragCursorIndex, cursorIndex);
+				int dragMax = std::max(dragCursorIndex, cursorIndex);
+				text.erase(dragMin, dragMax - dragMin);
+				cursorIndex = dragMin;
+				dragCursorIndex = cursorIndex;
+			}
 			analyzeText(cursorIndex, true);
 		}
 		break;
 	case GLFW_KEY_BACKSPACE:
 		if (text.length() > 0 && cursorIndex >= 1) {
-			text.erase(cursorIndex-1, 1);
-			setCursorIndex(cursorIndex - 1);
+			if (cursorIndex == dragCursorIndex) {
+				text.erase(cursorIndex - 1, 1);
+				setCursorIndex(cursorIndex - 1);
+			}
+			else {
+				int dragMin = std::min(dragCursorIndex, cursorIndex);
+				int dragMax = std::max(dragCursorIndex, cursorIndex);
+				text.erase(dragMin, dragMax - dragMin);
+				cursorIndex = dragMin;
+			}
 			dragCursorIndex = cursorIndex;
 			analyzeText(cursorIndex, true);
 		}
 		break;
 	case GLFW_KEY_ENTER: {
-		string newLine = "\n";
-		text.insert(cursorIndex, newLine);
-		setCursorIndex(cursorIndex + 1);
+		if (cursorIndex == dragCursorIndex) {
+			text.insert(cursorIndex, 1, '\n');
+			setCursorIndex(cursorIndex + 1);
+		}
+		else {
+			int dragMin = std::min(dragCursorIndex, cursorIndex);
+			int dragMax = std::max(dragCursorIndex, cursorIndex);
+			text.replace(dragMin, dragMax - dragMin, 1, '\n');
+			setCursorIndex(dragMin + 1);
+		}
 		dragCursorIndex = cursorIndex;
 		analyzeText(cursorIndex-1, false);
 		break; }
