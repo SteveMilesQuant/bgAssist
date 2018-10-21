@@ -506,6 +506,27 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 		if (!(mods & GLFW_MOD_SHIFT)) dragCursorIndex = cursorIndex;
 		analyzeText(cursorIndex, false); // TODO: make an analyze cursor function instead
 		break; }
+	case GLFW_KEY_C:
+	case GLFW_KEY_X:
+		// Copy/cut text to clipboard
+		if (mods & GLFW_MOD_CONTROL && dragCursorIndex != cursorIndex) {
+			int dragMin = std::min(dragCursorIndex, cursorIndex);
+			int dragMax = std::max(dragCursorIndex, cursorIndex);
+			string subtext = text.substr(dragMin, dragMax - dragMin);
+			if (key == GLFW_KEY_X) {
+				text.erase(dragMin, dragMax - dragMin);
+				cursorIndex = dragMin;
+				dragCursorIndex = cursorIndex;
+			}
+			glfwSetClipboardString(window, subtext.c_str());
+		}
+		break;
+	case GLFW_KEY_V:
+		if (mods & GLFW_MOD_CONTROL) {
+			string insertText(glfwGetClipboardString(window));
+			replaceTextAtCursor(insertText);
+		}
+		break;
 	default: break;
 	}
 }
@@ -705,7 +726,7 @@ void textBox::setCursorToCurrentMousPos(vec2 clickPosition_world) {
 	cursorXCoord_textBoxSpace = lineWidth;
 }
 
-// Insert text at cursor, or replace highlighted text at cursor
+// Insert text at cursor, or replace highlighted text
 void textBox::replaceTextAtCursor(string replacementText) {
 	if (cursorIndex == dragCursorIndex) {
 		text.insert(cursorIndex, replacementText);
