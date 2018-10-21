@@ -65,11 +65,13 @@ private:
 	GLuint textProgramId;
 	GLuint textureUniformId;
 	GLuint textColorUniformId;
+	GLuint highlightFlagUniformId;
 
 	GLuint cursorProgramId;
 	GLuint cursorColorUniformId;
 
 	int cursorIndex; // index of the cursour within the string ("before" this index in the string)
+	int dragCursorIndex; // when we're dragging/highlighting, the cursor index
 	GLboolean drawCursorFlag; // flag on whether we're currently drawing the cursor
 	double cursorLastToggledTime;
 	GLfloat cursorXCoord_textBoxSpace;
@@ -77,6 +79,7 @@ private:
 
 	scrollBar scrollBar;
 	GLboolean isSelectedFlag; // is this object selected?
+	GLboolean draggingFlag; // are we dragging?
 
 	void passBuffersToGLM();
 	void copyTextBox(const textBox & inTextBox);
@@ -86,5 +89,6 @@ private:
 	void analyzeScrollBar();
 	void setCursorIndex(int inCursorIndex);
 	vec2 calcEffectiveLocation();
+	void setCursorToCurrentMousPos(vec2 clickPosition_world);
 };
 

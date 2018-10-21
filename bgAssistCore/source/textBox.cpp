@@ -33,17 +33,20 @@ textBox::textBox() {
 	textProgramId = -1;
 	textureUniformId = -1;
 	textColorUniformId = -1;
+	highlightFlagUniformId = -1;
 
 	cursorProgramId = -1;
 	cursorColorUniformId = -1;
 
 	cursorIndex = 0;
+	dragCursorIndex = 0;
 	drawCursorFlag = false;
 	cursorLastToggledTime = glfwGetTime();
 	cursorRowIdx = 0;
 
 	// scrollBar has its own initializer
 	isSelectedFlag = false;
+	draggingFlag = false;
 }
 
 void textBox::copyTextBox(const textBox & inTextBox) {
@@ -76,17 +79,20 @@ void textBox::copyTextBox(const textBox & inTextBox) {
 	textProgramId = inTextBox.textProgramId;
 	textureUniformId = inTextBox.textureUniformId;
 	textColorUniformId = inTextBox.textColorUniformId;
+	highlightFlagUniformId = inTextBox.highlightFlagUniformId;
 
 	cursorProgramId = inTextBox.cursorProgramId;
 	cursorColorUniformId = inTextBox.cursorColorUniformId;
 
 	cursorIndex = inTextBox.cursorIndex;
+	dragCursorIndex = inTextBox.dragCursorIndex;
 	drawCursorFlag = inTextBox.drawCursorFlag;
 	cursorLastToggledTime = inTextBox.cursorLastToggledTime;
 	cursorRowIdx = inTextBox.cursorRowIdx;
 
 	scrollBar = inTextBox.scrollBar;
 	isSelectedFlag = false;
+	draggingFlag = false;
 }
 
 textBox::~textBox() {
@@ -134,6 +140,7 @@ void textBox::setTextProgramId(GLuint inProgramId) {
 	textProgramId = inProgramId;
 	textureUniformId = glGetUniformLocation(inProgramId, "textImageTexture");
 	textColorUniformId = glGetUniformLocation(inProgramId, "textColor");
+	highlightFlagUniformId = glGetUniformLocation(inProgramId, "highlightFlag");
 	scrollBar.setProgramId(inProgramId);
 }
 
@@ -144,7 +151,8 @@ void textBox::setCursorProgramId(GLuint inProgramId) {
 
 void textBox::setText(string inText) {
 	text = inText;
-	setCursorIndex((int)text.length()); 
+	setCursorIndex((int)text.length());
+	dragCursorIndex = cursorIndex;
 	analyzeText(0, false); // fully reanalyze the text for line breaks
 }
 
@@ -210,15 +218,26 @@ void textBox::draw() {
 	
 	vec2 effectiveUpperLeftCorner = calcEffectiveLocation();
 	vec2 corner = effectiveUpperLeftCorner;
+	int dragMin = std::min(dragCursorIndex, cursorIndex);
+	int dragMax = std::max(dragCursorIndex, cursorIndex);
 	int b = 0;
 	for (int i = 0; i < text.length(); i++) {
+		// Draw the cursor
 		if (i == cursorIndex) drawCursor(corner);
+
+		// Line break
 		if (b < lineBreakIndices.size() && lineBreakIndices[b] == i) {
 			if (text[i] == '-') corner = drawOneChar(text[i], corner);
 			corner = vec2(effectiveUpperLeftCorner.x, corner.y - textHeight);
 			b++;
 			continue;
 		}
+
+		// Evaluate whether this text is highlighted
+		if (i >= dragMin && i < dragMax) glUniform1i(highlightFlagUniformId, 1);
+		else glUniform1i(highlightFlagUniformId, 0);
+
+		// Draw one character
 		corner = drawOneChar(text[i], corner);
 	}
 
@@ -352,6 +371,7 @@ void textBox::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoin
 
 	text.insert(cursorIndex, &charInsert, 1);
 	setCursorIndex(cursorIndex + 1);
+	dragCursorIndex = cursorIndex;
 	if (charInsert == '-' || charInsert == ' ' || charInsert == '\n') {
 		int i, startAnalysisAt;
 		for (i = (int)lineBreakIndices.size() - 1; i >= 0; i--) {
@@ -385,22 +405,26 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 	case GLFW_KEY_BACKSPACE:
 		if (text.length() > 0 && cursorIndex >= 1) {
 			text.erase(cursorIndex-1, 1);
-			setCursorIndex(cursorIndex - 1); 
+			setCursorIndex(cursorIndex - 1);
+			dragCursorIndex = cursorIndex;
 			analyzeText(cursorIndex, true);
 		}
 		break;
 	case GLFW_KEY_ENTER: {
 		string newLine = "\n";
 		text.insert(cursorIndex, newLine);
-		setCursorIndex(cursorIndex + 1); 
+		setCursorIndex(cursorIndex + 1);
+		dragCursorIndex = cursorIndex;
 		analyzeText(cursorIndex-1, false);
 		break; }
 	case GLFW_KEY_LEFT:
 		setCursorIndex(cursorIndex - 1);
+		if (!(mods & GLFW_MOD_SHIFT)) dragCursorIndex = cursorIndex;
 		analyzeText(cursorIndex, false); // TODO: make an analyze cursor function instead
 		break;
 	case GLFW_KEY_RIGHT:
 		setCursorIndex(cursorIndex + 1);
+		if (!(mods & GLFW_MOD_SHIFT)) dragCursorIndex = cursorIndex;
 		analyzeText(cursorIndex, false); // TODO: make an analyze cursor function instead
 		break;
 	case GLFW_KEY_HOME: {
@@ -411,6 +435,7 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 			}
 		}
 		if (i < 0) cursorIndex = 0;
+		if (!(mods & GLFW_MOD_SHIFT)) dragCursorIndex = cursorIndex;
 		analyzeText(cursorIndex, false);
 		break; }
 	case GLFW_KEY_END: {
@@ -421,6 +446,7 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 			}
 		}
 		if (i == lineBreakIndices.size()) cursorIndex = (int)text.length();
+		if (!(mods & GLFW_MOD_SHIFT)) dragCursorIndex = cursorIndex;
 		analyzeText(cursorIndex, false);
 		break; }
 	case GLFW_KEY_UP:
@@ -466,6 +492,7 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 		}
 		if (i == text.length()) setCursorIndex(i);
 		else if (i == endAtCnt) setCursorIndex(i-1);
+		if (!(mods & GLFW_MOD_SHIFT)) dragCursorIndex = cursorIndex;
 		analyzeText(cursorIndex, false); // TODO: make an analyze cursor function instead
 		break; }
 	default: break;
@@ -479,6 +506,7 @@ void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int ac
 
 	// Note that we've been selected (we won't draw text cursor if we haven't)
 	isSelectedFlag = true;
+	if (action == GLFW_RELEASE) draggingFlag = false;
 
 	// If we clicked on the scroll bar, use its callback
 	// Also tell the scroll bar when we release
@@ -490,45 +518,24 @@ void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int ac
 	// Text box only cares about presses, not releases (for now)
 	if (!isEditableFlag || action != GLFW_PRESS) return;
 
-	vec2 effectiveUpperLeftCorner = calcEffectiveLocation();
-	vec2 tempVec = clickPosition_world - effectiveUpperLeftCorner;
-	vec2 clickPosition_textbox(tempVec.x, -tempVec.y); // need to reverse direction of y again
+	// Note a start to the drag (for highlighting)
+	draggingFlag = true;
 
-	// Find the row
-	int rowIdx = (int)(clickPosition_textbox.y / textHeight);
-	int charIdx, endRowCnt;
-	rowIdx = std::min( (int) std::max(rowIdx, (int)0), (int)lineBreakIndices.size());
-	if (rowIdx < 1) charIdx = 0;
-	else charIdx = lineBreakIndices[rowIdx-1]+1;
-
-	// Initialize cursor index
-	if (rowIdx < lineBreakIndices.size()) {
-		endRowCnt = lineBreakIndices[rowIdx];
-		setCursorIndex(lineBreakIndices[rowIdx]);
-	}
-	else {
-		endRowCnt = (int)text.length();
-		setCursorIndex((int)text.length());
-	}
-
-	// Find the column
-	GLfloat lineWidth = 0.0f;
-	for (; charIdx < endRowCnt; charIdx++) {
-		GLfloat charWidth = textFont->getCharUnitWidth(text[charIdx]) * textHeight;
-		if (lineWidth + charWidth / 2.0f > clickPosition_textbox.x) {
-			setCursorIndex(charIdx);
-			break;
-		}
-		lineWidth += charWidth;
-	}
-	cursorXCoord_textBoxSpace = lineWidth;
+	// Set the text cursor to the current mouse position
+	setCursorToCurrentMousPos(clickPosition_world);
+	if (!(mods & GLFW_MOD_SHIFT)) dragCursorIndex = cursorIndex;
 }
 
 
+// The scroll bar may be dragging, so notify it of a cursor move
 void textBox::callGlfwCursorPosCallback(GLFWwindow* window, double x, double y) {
-	scrollBar.callGlfwCursorPosCallback(window, x, y);
+	if (draggingFlag) {
+		vec2 clickPosition_world = screenPosTo2DCoord(window, x, y);
+		setCursorToCurrentMousPos(clickPosition_world);
+		// Don't update dragCursorIndex here
+	}
+	else scrollBar.callGlfwCursorPosCallback(window, x, y);
 }
-
 
 // Scroll text
 void textBox::callGlfwScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
@@ -541,9 +548,10 @@ void textBox::callGlfwScrollCallback(GLFWwindow* window, double xoffset, double 
 	scrollBar.callGlfwScrollCallback(window, xoffset, yoffset);
 }
 
-// Deselect
+// Deselect: stop drawing cursor and scroll bar should stop dragging
 void textBox::deselect() {
 	isSelectedFlag = false;
+	draggingFlag = false;
 	scrollBar.deselect();
 }
 
@@ -647,4 +655,41 @@ void textBox::analyzeScrollBar() {
 		GLfloat newPos = fmin(fmax(origPos, minPos), maxPos);
 		scrollBar.setBarRelativePosition(newPos);
 	}
+}
+
+
+// Set the cursor to wherever the mouse currently is
+void textBox::setCursorToCurrentMousPos(vec2 clickPosition_world) {
+	vec2 effectiveUpperLeftCorner = calcEffectiveLocation();
+	vec2 tempVec = clickPosition_world - effectiveUpperLeftCorner;
+	vec2 clickPosition_textbox(tempVec.x, -tempVec.y); // need to reverse direction of y again
+
+	// Find the row
+	int rowIdx = (int)(clickPosition_textbox.y / textHeight);
+	int charIdx, endRowCnt;
+	rowIdx = std::min((int)std::max(rowIdx, (int)0), (int)lineBreakIndices.size());
+	if (rowIdx < 1) charIdx = 0;
+	else charIdx = lineBreakIndices[rowIdx - 1] + 1;
+
+	// Initialize cursor index
+	if (rowIdx < lineBreakIndices.size()) {
+		endRowCnt = lineBreakIndices[rowIdx];
+		setCursorIndex(lineBreakIndices[rowIdx]);
+	}
+	else {
+		endRowCnt = (int)text.length();
+		setCursorIndex((int)text.length());
+	}
+
+	// Find the column
+	GLfloat lineWidth = 0.0f;
+	for (; charIdx < endRowCnt; charIdx++) {
+		GLfloat charWidth = textFont->getCharUnitWidth(text[charIdx]) * textHeight;
+		if (lineWidth + charWidth / 2.0f > clickPosition_textbox.x) {
+			setCursorIndex(charIdx);
+			break;
+		}
+		lineWidth += charWidth;
+	}
+	cursorXCoord_textBoxSpace = lineWidth;
 }
