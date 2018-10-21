@@ -91,5 +91,6 @@ private:
 	vec2 calcEffectiveLocation();
 	void setCursorToCurrentMousPos(vec2 clickPosition_world);
 	void replaceTextAtCursor(string replacementText);
+	void deleteTextAtCursor();
 };
 

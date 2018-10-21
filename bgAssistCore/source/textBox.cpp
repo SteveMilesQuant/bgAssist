@@ -370,19 +370,6 @@ void textBox::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoin
 	char charInsert = (char)codepoint;
 
 	replaceTextAtCursor(string(1, charInsert));
-
-	if (charInsert == '-' || charInsert == ' ' || charInsert == '\n') {
-		int i, startAnalysisAt;
-		for (i = (int)lineBreakIndices.size() - 1; i >= 0; i--) {
-			if (lineBreakIndices[i] < cursorIndex - 1) {
-				break;
-			}
-		}
-		if (i < 1) startAnalysisAt = 0;
-		else startAnalysisAt = lineBreakIndices[i - 1] + 1;
-		analyzeText(startAnalysisAt, false);
-	}
-	else analyzeText(cursorIndex-1, false);
 }
 
 // Key callback
@@ -396,38 +383,16 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 
 	switch (key) {
 	case GLFW_KEY_DELETE:
-		if (text.length() > 0 && cursorIndex < text.length()) {
-			if (cursorIndex == dragCursorIndex) text.erase(cursorIndex, 1);
-			else {
-				int dragMin = std::min(dragCursorIndex, cursorIndex);
-				int dragMax = std::max(dragCursorIndex, cursorIndex);
-				text.erase(dragMin, dragMax - dragMin);
-				cursorIndex = dragMin;
-				dragCursorIndex = cursorIndex;
-			}
-			analyzeText(cursorIndex, true);
-		}
+		if (cursorIndex == dragCursorIndex) setCursorIndex(cursorIndex + 1);
+		deleteTextAtCursor();
 		break;
 	case GLFW_KEY_BACKSPACE:
-		if (text.length() > 0 && cursorIndex >= 1) {
-			if (cursorIndex == dragCursorIndex) {
-				text.erase(cursorIndex - 1, 1);
-				setCursorIndex(cursorIndex - 1);
-			}
-			else {
-				int dragMin = std::min(dragCursorIndex, cursorIndex);
-				int dragMax = std::max(dragCursorIndex, cursorIndex);
-				text.erase(dragMin, dragMax - dragMin);
-				cursorIndex = dragMin;
-			}
-			dragCursorIndex = cursorIndex;
-			analyzeText(cursorIndex, true);
-		}
+		if (cursorIndex == dragCursorIndex) setCursorIndex(cursorIndex - 1);
+		deleteTextAtCursor();
 		break;
-	case GLFW_KEY_ENTER: {
+	case GLFW_KEY_ENTER:
 		replaceTextAtCursor("\n");
-		analyzeText(cursorIndex-1, false);
-		break; }
+		break;
 	case GLFW_KEY_LEFT:
 		setCursorIndex(cursorIndex - 1);
 		if (!(mods & GLFW_MOD_SHIFT)) dragCursorIndex = cursorIndex;
@@ -513,11 +478,7 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 			int dragMin = std::min(dragCursorIndex, cursorIndex);
 			int dragMax = std::max(dragCursorIndex, cursorIndex);
 			string subtext = text.substr(dragMin, dragMax - dragMin);
-			if (key == GLFW_KEY_X) {
-				text.erase(dragMin, dragMax - dragMin);
-				cursorIndex = dragMin;
-				dragCursorIndex = cursorIndex;
-			}
+			if (key == GLFW_KEY_X) deleteTextAtCursor();
 			glfwSetClipboardString(window, subtext.c_str());
 		}
 		break;
@@ -609,6 +570,11 @@ void textBox::analyzeText(int startAtIndex, GLboolean forDeletionFlag) {
 			}
 		}
 		else lineBreakIndices.pop_back();
+	}
+	// Always go one line back, since we could have inserted a line break
+	if (i >= 0) {
+		i--;
+		lineBreakIndices.pop_back();
 	}
 	if (i < 0) startAtIndex = 0;
 
@@ -728,15 +694,31 @@ void textBox::setCursorToCurrentMousPos(vec2 clickPosition_world) {
 
 // Insert text at cursor, or replace highlighted text
 void textBox::replaceTextAtCursor(string replacementText) {
+	int startAnalysisIdx;
 	if (cursorIndex == dragCursorIndex) {
 		text.insert(cursorIndex, replacementText);
+		startAnalysisIdx = cursorIndex;
 		setCursorIndex(cursorIndex + (int)replacementText.length());
 	}
 	else {
 		int dragMin = std::min(dragCursorIndex, cursorIndex);
 		int dragMax = std::max(dragCursorIndex, cursorIndex);
+		startAnalysisIdx = dragMin;
 		text.replace(dragMin, dragMax - dragMin, replacementText);
 		setCursorIndex(dragMin + (int)replacementText.length());
 	}
 	dragCursorIndex = cursorIndex;
+	analyzeText(std::max(startAnalysisIdx, 0), false);
+}
+
+// Delete text at cursor
+void textBox::deleteTextAtCursor() {
+	if (cursorIndex != dragCursorIndex) {
+		int dragMin = std::min(dragCursorIndex, cursorIndex);
+		int dragMax = std::max(dragCursorIndex, cursorIndex);
+		text.erase(dragMin, dragMax - dragMin);
+		cursorIndex = dragMin;
+		dragCursorIndex = cursorIndex;
+		analyzeText(cursorIndex, true);
+	}
 }
