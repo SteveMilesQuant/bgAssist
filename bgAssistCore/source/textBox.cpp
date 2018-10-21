@@ -367,19 +367,10 @@ void textBox::drawCursor(vec2 topLocation) {
 // Type a letter at cursor
 void textBox::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoint, int mods) {
 	if (!isEditableFlag) return;
-	char charInsert = (char) codepoint;
+	char charInsert = (char)codepoint;
 
-	if (cursorIndex == dragCursorIndex) {
-		text.insert(cursorIndex, &charInsert, 1);
-		setCursorIndex(cursorIndex + 1);
-	}
-	else {
-		int dragMin = std::min(dragCursorIndex, cursorIndex);
-		int dragMax = std::max(dragCursorIndex, cursorIndex);
-		text.replace(dragMin, dragMax - dragMin, 1, charInsert);
-		setCursorIndex(dragMin + 1);
-	}
-	dragCursorIndex = cursorIndex;
+	replaceTextAtCursor(string(1, charInsert));
+
 	if (charInsert == '-' || charInsert == ' ' || charInsert == '\n') {
 		int i, startAnalysisAt;
 		for (i = (int)lineBreakIndices.size() - 1; i >= 0; i--) {
@@ -434,17 +425,7 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 		}
 		break;
 	case GLFW_KEY_ENTER: {
-		if (cursorIndex == dragCursorIndex) {
-			text.insert(cursorIndex, 1, '\n');
-			setCursorIndex(cursorIndex + 1);
-		}
-		else {
-			int dragMin = std::min(dragCursorIndex, cursorIndex);
-			int dragMax = std::max(dragCursorIndex, cursorIndex);
-			text.replace(dragMin, dragMax - dragMin, 1, '\n');
-			setCursorIndex(dragMin + 1);
-		}
-		dragCursorIndex = cursorIndex;
+		replaceTextAtCursor("\n");
 		analyzeText(cursorIndex-1, false);
 		break; }
 	case GLFW_KEY_LEFT:
@@ -722,4 +703,19 @@ void textBox::setCursorToCurrentMousPos(vec2 clickPosition_world) {
 		lineWidth += charWidth;
 	}
 	cursorXCoord_textBoxSpace = lineWidth;
+}
+
+// Insert text at cursor, or replace highlighted text at cursor
+void textBox::replaceTextAtCursor(string replacementText) {
+	if (cursorIndex == dragCursorIndex) {
+		text.insert(cursorIndex, replacementText);
+		setCursorIndex(cursorIndex + (int)replacementText.length());
+	}
+	else {
+		int dragMin = std::min(dragCursorIndex, cursorIndex);
+		int dragMax = std::max(dragCursorIndex, cursorIndex);
+		text.replace(dragMin, dragMax - dragMin, replacementText);
+		setCursorIndex(dragMin + (int)replacementText.length());
+	}
+	dragCursorIndex = cursorIndex;
 }
