@@ -11,7 +11,8 @@ undoRedoUnit::undoRedoUnit() {
 	cursorIndex = 0;
 	dragCursorIndex = 0;
 	deleteCursorIndex = 0;
-	goesWithPreviousAction = false;
+	moveTargetIndex = 0;
+	goesWithPreviousActionFlag = false;
 	timeWasUpdated = glfwGetTime();
 }
 
@@ -21,7 +22,8 @@ void undoRedoUnit::copyUnit(const undoRedoUnit & inUnit) {
 	cursorIndex = inUnit.cursorIndex;
 	dragCursorIndex = inUnit.dragCursorIndex;
 	deleteCursorIndex = inUnit.deleteCursorIndex;
-	goesWithPreviousAction = false;
+	moveTargetIndex = inUnit.moveTargetIndex;
+	goesWithPreviousActionFlag = false;
 	timeWasUpdated = inUnit.timeWasUpdated;
 }
 
@@ -540,13 +542,18 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 		stack<undoRedoUnit> &otherStack = (key == GLFW_KEY_Z) ? redoStack : undoStack;
 
 		if (mods & GLFW_MOD_CONTROL && !thisStack.empty() && isEditableFlag) {
+			movingFlag = false;
+			draggingFlag = false;
+
 			undoRedoUnit undoAction;
+			GLboolean firstPassFlag = true;
 			do {
 				undoAction = thisStack.top();
 				thisStack.pop();
 
 				int dragMin = std::min(undoAction.cursorIndex, undoAction.dragCursorIndex);
 				int dragMax = std::max(undoAction.cursorIndex, undoAction.dragCursorIndex);
+				GLboolean didSomethingFlag = true; // most things do something
 
 				switch (undoAction.action) {
 				case TEXTBOX_ACTION_TYPE:
@@ -560,13 +567,40 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 					dragCursorIndex = dragMin;
 					replaceTextAtCursor(undoAction.text, true, otherStack);
 					break;
+				case TEXTBOX_ACTION_MOVE:
+					if (undoAction.moveTargetIndex < dragMin) {
+						// Last time we moved backwards
+						dragCursorIndex = undoAction.moveTargetIndex; // start
+						movingTextCursorIndex = undoAction.moveTargetIndex + dragMax - dragMin; // end
+						cursorIndex = dragMax; // target
+					}
+					else {
+						// Last time we moved forward
+						dragCursorIndex = undoAction.moveTargetIndex - dragMax + dragMin; // start
+						movingTextCursorIndex = undoAction.moveTargetIndex; // end
+						cursorIndex = dragMin; // target
+					}
+					moveHighlightedTextToCursor(otherStack);
+					break;
+				default:
+					// Do nothing
+					didSomethingFlag = false;
+					break;
+				}
+
+				// Fix goesWithPreviousActionFlag
+				if (didSomethingFlag) {
+					if (firstPassFlag) otherStack.top().goesWithPreviousActionFlag = false;
+					else otherStack.top().goesWithPreviousActionFlag = true;
 				}
 
 				// After we're done, set the cursors to what they were before this action
 				if (undoAction.action == TEXTBOX_ACTION_DELETE) cursorIndex = undoAction.deleteCursorIndex;
 				else cursorIndex = undoAction.cursorIndex;
 				dragCursorIndex = undoAction.dragCursorIndex;
-			} while (undoAction.goesWithPreviousAction && !thisStack.empty());
+
+				firstPassFlag = false;
+			} while (undoAction.goesWithPreviousActionFlag && !thisStack.empty());
 		}
 		break; }
 	default: break;
@@ -592,23 +626,8 @@ void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int ac
 			setCursorToCurrentMousPos(clickPosition_world);
 
 			// If we're actually moving it, then move it
-			if (cursorIndex < dragMin || cursorIndex >= dragMax) {
-				int startAnalysisAt;
-				string subtext = text.substr(dragMin, dragMax - dragMin);
-				if (cursorIndex < dragMin) {
-					text.erase(dragMin, subtext.length());
-					text.insert(cursorIndex, subtext);
-					startAnalysisAt = cursorIndex;
-					dragCursorIndex = cursorIndex + (int)subtext.length();
-				}
-				else {
-					text.insert(cursorIndex, subtext);
-					text.erase(dragMin, subtext.length());
-					startAnalysisAt = dragMin;
-					dragCursorIndex = cursorIndex - (int)subtext.length();
-				}
-				analyzeText(startAnalysisAt);
-
+			if (isEditableFlag && (cursorIndex < dragMin || cursorIndex >= dragMax)) {
+				moveHighlightedTextToCursor(undoStack);
 				while (!redoStack.empty()) redoStack.pop(); // when we do anything other than undo/redo, clear the redo stack
 			}
 			else {
@@ -866,7 +885,7 @@ void textBox::replaceTextAtCursor(string replacementText, GLboolean pastingTextF
 		deleteAction.dragCursorIndex = dragCursorIndex;
 		deleteAction.timeWasUpdated = glfwGetTime();
 		deleteAction.text = text.substr(dragMin, len);
-		deleteAction.goesWithPreviousAction = false;
+		deleteAction.goesWithPreviousActionFlag = false;
 		outStack.push(deleteAction);
 
 		undoRedoUnit typeAction;
@@ -875,7 +894,7 @@ void textBox::replaceTextAtCursor(string replacementText, GLboolean pastingTextF
 		typeAction.dragCursorIndex = dragMin;
 		typeAction.timeWasUpdated = deleteAction.timeWasUpdated;
 		typeAction.text = replacementText;
-		typeAction.goesWithPreviousAction = true;
+		typeAction.goesWithPreviousActionFlag = true;
 		outStack.push(typeAction);
 
 		// Execute replacement
@@ -901,7 +920,7 @@ void textBox::deleteTextAtCursor(int origCursorIndex, stack<undoRedoUnit> &outSt
 		deleteAction.cursorIndex = cursorIndex;
 		deleteAction.dragCursorIndex = dragCursorIndex;
 		deleteAction.deleteCursorIndex = origCursorIndex;
-		deleteAction.goesWithPreviousAction = false;
+		deleteAction.goesWithPreviousActionFlag = false;
 		deleteAction.timeWasUpdated = glfwGetTime();
 		outStack.push(deleteAction);
 
@@ -911,3 +930,39 @@ void textBox::deleteTextAtCursor(int origCursorIndex, stack<undoRedoUnit> &outSt
 		analyzeText(cursorIndex);
 	}
 }
+
+// Move highlighted text to cursor
+void textBox::moveHighlightedTextToCursor(stack<undoRedoUnit> &outStack) {
+	int dragMin = std::min(movingTextCursorIndex, dragCursorIndex);
+	int dragMax = std::max(movingTextCursorIndex, dragCursorIndex);
+	int startAnalysisAt;
+
+	// Note action for undo/redo
+	string subtext = text.substr(dragMin, dragMax - dragMin);
+	undoRedoUnit moveAction;
+	moveAction.action = TEXTBOX_ACTION_MOVE;
+	moveAction.text = subtext;
+	moveAction.cursorIndex = movingTextCursorIndex;
+	moveAction.dragCursorIndex = dragCursorIndex;
+	moveAction.moveTargetIndex = cursorIndex;
+	moveAction.goesWithPreviousActionFlag = false;
+	moveAction.timeWasUpdated = glfwGetTime();
+	outStack.push(moveAction);
+
+	// If we're moving backwards, delete then insert
+	// If we're moving forward, insert then delete
+	if (cursorIndex < dragMin) {
+		text.erase(dragMin, subtext.length());
+		text.insert(cursorIndex, subtext);
+		startAnalysisAt = cursorIndex;
+		dragCursorIndex = cursorIndex + (int)subtext.length();
+	}
+	else {
+		text.insert(cursorIndex, subtext);
+		text.erase(dragMin, subtext.length());
+		startAnalysisAt = dragMin;
+		dragCursorIndex = cursorIndex - (int)subtext.length();
+	}
+	analyzeText(startAnalysisAt);
+}
+

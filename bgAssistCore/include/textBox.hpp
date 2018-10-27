@@ -28,7 +28,8 @@ public:
 	int cursorIndex;
 	int dragCursorIndex;
 	int deleteCursorIndex; // where the cursor belongs after undoing a delete
-	GLboolean goesWithPreviousAction;
+	int moveTargetIndex; // when moving, we need a third index
+	GLboolean goesWithPreviousActionFlag;
 	double timeWasUpdated;
 
 	undoRedoUnit();
@@ -129,5 +130,6 @@ private:
 	void replaceTextAtCursor(string replacementText, GLboolean pastingTextFlag, stack<undoRedoUnit> &outStack);
 	void deleteTextAtCursor(int origCursorIndex, stack<undoRedoUnit> &outStack);
 	void deleteTextAtCursor(stack<undoRedoUnit> &outStack) { deleteTextAtCursor(cursorIndex, outStack); }
+	void moveHighlightedTextToCursor(stack<undoRedoUnit> &outStack);
 };
 
