@@ -5,6 +5,7 @@
 #include <scrollBar.hpp>
 
 #include <string>
+#include <stack>
 using namespace std;
 
 #include <GL/glew.h>
@@ -12,11 +13,41 @@ using namespace std;
 #include <glm/gtx/transform.hpp>
 using namespace glm;
 
+enum textBoxActionType {
+	TEXTBOX_ACTION_UNKNOWN = 0,
+	TEXTBOX_ACTION_TYPE = 1,
+	TEXTBOX_ACTION_PASTE = 2,
+	TEXTBOX_ACTION_MOVE = 3,
+	TEXTBOX_ACTION_DELETE = 4
+};
+
+class undoRedoUnit {
+public:
+	enum textBoxActionType action;
+	string text;
+	int cursorIndex;
+	int dragCursorIndex;
+	int deleteCursorIndex; // where the cursor belongs after undoing a delete
+	GLboolean goesWithPreviousAction;
+	double timeWasUpdated;
+
+	undoRedoUnit();
+	~undoRedoUnit();
+	undoRedoUnit(const undoRedoUnit & inUnit) { copyUnit(inUnit); }
+	undoRedoUnit(const undoRedoUnit && inUnit) { copyUnit(inUnit); }
+	undoRedoUnit & operator = (const undoRedoUnit & inUnit) { copyUnit(inUnit); return *this; }
+
+private:
+	
+	void copyUnit(const undoRedoUnit & inUnit);
+};
+
 class textBox {
 public:
-	GLboolean isEditableFlag;
-	GLfloat cursorWidth;
-	double cursorToggleTime;
+	GLboolean isEditableFlag; // is the text box editable at all?
+	GLfloat cursorWidth; // width of the cursor
+	double cursorToggleTime; // how long for the cursor to toggle between drawn and not drawn
+	double undoActionPauseTime; // how long of a pause distinguishes two separate typing actions for the undo?
 
 	textBox();
 	~textBox();
@@ -83,6 +114,9 @@ private:
 	GLboolean movingFlag; // are we moving text?
 	int movingTextCursorIndex; // the cursorIndex when we started moving text
 
+	stack<undoRedoUnit> undoStack;
+	stack<undoRedoUnit> redoStack;
+
 	void passBuffersToGLM();
 	void copyTextBox(const textBox & inTextBox);
 	vec2 drawOneChar(char inChar, vec2 upperLeftCorner); // returns the upper right corner
@@ -92,7 +126,8 @@ private:
 	void setCursorIndex(int inCursorIndex);
 	vec2 calcEffectiveLocation();
 	void setCursorToCurrentMousPos(vec2 clickPosition_world);
-	void replaceTextAtCursor(string replacementText);
-	void deleteTextAtCursor();
+	void replaceTextAtCursor(string replacementText, GLboolean pastingTextFlag, stack<undoRedoUnit> &outStack);
+	void deleteTextAtCursor(int origCursorIndex, stack<undoRedoUnit> &outStack);
+	void deleteTextAtCursor(stack<undoRedoUnit> &outStack) { deleteTextAtCursor(cursorIndex, outStack); }
 };
 
