@@ -936,7 +936,7 @@ void textBox::deleteTextAtCursor(int deleteCursorIndex, stack<undoRedoUnit> &out
 		deleteAction.text = text.substr(dragMin, len);
 		deleteAction.cursorIndex = cursorIndex;
 		deleteAction.dragCursorIndex = dragCursorIndex;
-		deleteAction.deleteCursorIndex = deleteCursorIndex;
+		deleteAction.deleteCursorIndex = dragMin;
 		deleteAction.goesWithPreviousActionFlag = false;
 		deleteAction.timeWasUpdated = glfwGetTime();
 		outStack.push(deleteAction);
