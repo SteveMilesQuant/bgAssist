@@ -416,20 +416,30 @@ void textBox::callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoin
 // New line for Enter button
 // Arrow buttons to move cursor
 void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	if (!isEditableFlag || action == GLFW_RELEASE || !textFont) return;
+	// If it isn't editable, then UP and DOWN can just move the scroll bar a line
+	if (!isEditableFlag) {
+		int nRows = (int)lineBreakIndices.size() + 1;
+		scrollBar.scrollRelativeBarJump = 1.0f / nRows;
+		scrollBar.callGlfwKeyCallback(window, key, scancode, action, mods);
+		return;
+	}
+
+	// We don't have any actions for release
+	// Font is just required in general - can't draw or anything without it
+	if (action == GLFW_RELEASE || !textFont) return;
 
 	int i;
-	int origCursorIndex = cursorIndex;
+	int deleteCursorIndex = cursorIndex;
 
 	switch (key) {
 	case GLFW_KEY_DELETE:
-		if (cursorIndex == dragCursorIndex) setCursorIndex(cursorIndex + 1);
-		deleteTextAtCursor(origCursorIndex, undoStack);
+		if (deleteCursorIndex == dragCursorIndex && deleteCursorIndex < text.length()) deleteCursorIndex++;
+		deleteTextAtCursor(deleteCursorIndex, undoStack);
 		while (!redoStack.empty()) redoStack.pop(); // when we do anything other than undo/redo, clear the redo stack
 		break;
 	case GLFW_KEY_BACKSPACE:
-		if (cursorIndex == dragCursorIndex) setCursorIndex(cursorIndex - 1);
-		deleteTextAtCursor(origCursorIndex, undoStack);
+		if (deleteCursorIndex == dragCursorIndex && deleteCursorIndex > 0) deleteCursorIndex--;
+		deleteTextAtCursor(deleteCursorIndex, undoStack);
 		while (!redoStack.empty()) redoStack.pop(); // when we do anything other than undo/redo, clear the redo stack
 		break;
 	case GLFW_KEY_ENTER:
@@ -519,6 +529,9 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 	case GLFW_KEY_X:
 		// Copy/cut text to clipboard
 		if (mods & GLFW_MOD_CONTROL && dragCursorIndex != cursorIndex) {
+			movingFlag = false;
+			draggingFlag = false;
+
 			int dragMin = std::min(dragCursorIndex, cursorIndex);
 			int dragMax = std::max(dragCursorIndex, cursorIndex);
 			string subtext = text.substr(dragMin, dragMax - dragMin);
@@ -530,6 +543,9 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 	// Paste
 	case GLFW_KEY_V:
 		if (mods & GLFW_MOD_CONTROL) {
+			movingFlag = false;
+			draggingFlag = false;
+
 			string insertText(glfwGetClipboardString(window));
 			replaceTextAtCursor(insertText, true, undoStack);
 			while (!redoStack.empty()) redoStack.pop(); // when we do anything other than undo/redo, clear the redo stack
@@ -541,7 +557,8 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 		stack<undoRedoUnit> &thisStack = (key == GLFW_KEY_Z) ? undoStack : redoStack;
 		stack<undoRedoUnit> &otherStack = (key == GLFW_KEY_Z) ? redoStack : undoStack;
 
-		if (mods & GLFW_MOD_CONTROL && !thisStack.empty() && isEditableFlag) {
+		if (mods & GLFW_MOD_CONTROL && !thisStack.empty()) {
+			// Exit moving/dragging if they undo or redo
 			movingFlag = false;
 			draggingFlag = false;
 
@@ -558,13 +575,13 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 				switch (undoAction.action) {
 				case TEXTBOX_ACTION_TYPE:
 				case TEXTBOX_ACTION_PASTE:
-					cursorIndex = dragMin;
 					dragCursorIndex = dragMin + (int)undoAction.text.length();
-					deleteTextAtCursor(otherStack);
+					cursorIndex = dragCursorIndex;
+					deleteTextAtCursor(dragMin, otherStack);
 					break;
 				case TEXTBOX_ACTION_DELETE:
-					cursorIndex = dragMin;
-					dragCursorIndex = dragMin;
+					cursorIndex = undoAction.deleteCursorIndex;
+					dragCursorIndex = undoAction.deleteCursorIndex;
 					replaceTextAtCursor(undoAction.text, true, otherStack);
 					break;
 				case TEXTBOX_ACTION_MOVE:
@@ -595,8 +612,7 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 				}
 
 				// After we're done, set the cursors to what they were before this action
-				if (undoAction.action == TEXTBOX_ACTION_DELETE) cursorIndex = undoAction.deleteCursorIndex;
-				else cursorIndex = undoAction.cursorIndex;
+				cursorIndex = undoAction.cursorIndex;
 				dragCursorIndex = undoAction.dragCursorIndex;
 
 				firstPassFlag = false;
@@ -907,10 +923,11 @@ void textBox::replaceTextAtCursor(string replacementText, GLboolean pastingTextF
 }
 
 // Delete text at cursor
-void textBox::deleteTextAtCursor(int origCursorIndex, stack<undoRedoUnit> &outStack) {
-	if (cursorIndex != dragCursorIndex) {
-		int dragMin = std::min(dragCursorIndex, cursorIndex);
-		int dragMax = std::max(dragCursorIndex, cursorIndex);
+void textBox::deleteTextAtCursor(int deleteCursorIndex, stack<undoRedoUnit> &outStack) {
+	// Use deleteCursorIndex instead of cursorIndex
+	if (deleteCursorIndex != dragCursorIndex) {
+		int dragMin = std::min(dragCursorIndex, deleteCursorIndex);
+		int dragMax = std::max(dragCursorIndex, deleteCursorIndex);
 		int len = dragMax - dragMin;
 
 		// Note the erasure in the undo or redo stack
@@ -919,14 +936,14 @@ void textBox::deleteTextAtCursor(int origCursorIndex, stack<undoRedoUnit> &outSt
 		deleteAction.text = text.substr(dragMin, len);
 		deleteAction.cursorIndex = cursorIndex;
 		deleteAction.dragCursorIndex = dragCursorIndex;
-		deleteAction.deleteCursorIndex = origCursorIndex;
+		deleteAction.deleteCursorIndex = deleteCursorIndex;
 		deleteAction.goesWithPreviousActionFlag = false;
 		deleteAction.timeWasUpdated = glfwGetTime();
 		outStack.push(deleteAction);
 
 		text.erase(dragMin, len);
 		cursorIndex = dragMin;
-		dragCursorIndex = cursorIndex;
+		dragCursorIndex = dragMin;
 		analyzeText(cursorIndex);
 	}
 }
@@ -938,10 +955,8 @@ void textBox::moveHighlightedTextToCursor(stack<undoRedoUnit> &outStack) {
 	int startAnalysisAt;
 
 	// Note action for undo/redo
-	string subtext = text.substr(dragMin, dragMax - dragMin);
 	undoRedoUnit moveAction;
 	moveAction.action = TEXTBOX_ACTION_MOVE;
-	moveAction.text = subtext;
 	moveAction.cursorIndex = movingTextCursorIndex;
 	moveAction.dragCursorIndex = dragCursorIndex;
 	moveAction.moveTargetIndex = cursorIndex;
@@ -951,6 +966,7 @@ void textBox::moveHighlightedTextToCursor(stack<undoRedoUnit> &outStack) {
 
 	// If we're moving backwards, delete then insert
 	// If we're moving forward, insert then delete
+	string subtext = text.substr(dragMin, dragMax - dragMin);
 	if (cursorIndex < dragMin) {
 		text.erase(dragMin, subtext.length());
 		text.insert(cursorIndex, subtext);
