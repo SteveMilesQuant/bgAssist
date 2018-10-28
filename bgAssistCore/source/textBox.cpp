@@ -744,11 +744,13 @@ void textBox::analyzeText(int startAtIndex) {
 	if (i < 0) startAtIndex = 0;
 
 	float lineWidth = 0, lineWidthFromLastSpace = 0;
+	float cursorLineWidthFromLastSpace = 0;
 	int lastSpaceIdx = startAtIndex - 1;
 	for (int i = startAtIndex; i < text.length(); i++) {
 		if (i == cursorIndex) {
 			cursorXCoord_textBoxSpace = lineWidth;
 			cursorRowIdx = (int)lineBreakIndices.size();
+			cursorLineWidthFromLastSpace = lineWidthFromLastSpace;
 		}
 
 		float charWidth = textFont->getCharUnitWidth(text[i]) * textHeight;
@@ -764,6 +766,10 @@ void textBox::analyzeText(int startAtIndex) {
 			if (text[i] == '\n' || lineWidth + charWidth > boxEffectiveWidth) {
 				lineBreakIndices.push_back(lastSpaceIdx);
 				lineWidth = lineWidthFromLastSpace;
+				if (cursorIndex <= i && cursorIndex > lastSpaceIdx) {
+					cursorXCoord_textBoxSpace = cursorLineWidthFromLastSpace;
+					cursorRowIdx = (int)lineBreakIndices.size();
+				}
 			}
 		}
 

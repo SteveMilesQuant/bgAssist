@@ -156,10 +156,28 @@ int main(void)
 	drawTextBox.loadScrollBarImage(scrollBarImagePath.c_str());
 	objectList.push_back(&drawTextBox);
 
+	textBox singleLineTextBox;
+	singleLineTextBox.setTextProgramId(twodimImageProgramId);
+	singleLineTextBox.setCursorProgramId(twodimSoloColorProgramId);
+	singleLineTextBox.setFont(&inkFreeFont);
+	singleLineTextBox.isEditableFlag = true;
+	singleLineTextBox.cursorWidth = 4.0f / screenWidth;
+	singleLineTextBox.setTextHeight(textHeight_screen);
+	singleLineTextBox.setBoxDimensions(vec2(2.0f*(1.0f - marginWidth), textHeight_screen));
+	singleLineTextBox.setText("Draw this text now! This is too long! Long! Long! Longgg");
+	singleLineTextBox.setBoxLocation(vec2(startPos.x, startPos.y - 5.5 * textHeight_screen));
+	singleLineTextBox.setTextColor(vec4(0, 0, 0.7, 1)); // blue, opaque
+
+	// Don't set up a scroll bar, so that we don't wrap text
+	objectList.push_back(&singleLineTextBox);
+
 	do {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		drawTextBox.draw();
+		// Draw all objects
+		for (int i = 0; i < objectList.size(); i++) {
+			objectList[i]->draw();
+		}
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
