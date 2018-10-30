@@ -72,6 +72,7 @@ textBox::textBox() {
 	cursorRowIdx = 0;
 
 	// scrollBar has its own initializer
+	wrapTextFlag = false;
 	isSelectedFlag = false;
 	draggingFlag = false;
 	movingFlag = false;
@@ -122,6 +123,7 @@ void textBox::copyTextBox(const textBox & inTextBox) {
 	cursorRowIdx = inTextBox.cursorRowIdx;
 
 	scrollBar = inTextBox.scrollBar;
+	wrapTextFlag = inTextBox.wrapTextFlag;
 	isSelectedFlag = false;
 	draggingFlag = false;
 	movingFlag = false;
@@ -228,6 +230,14 @@ void textBox::setScrollBarWidth(GLfloat inWidth) {
 	scrollBar.setDimensions(vec2(inWidth, boxDimensions.y));
 	scrollBar.setLocation(upperLeftCornerLocation + vec2(boxEffectiveWidth, 0));
 	analyzeText(0); // fully reanalyze the text for line breaks
+}
+
+void textBox::loadScrollBarImage(const char * imagePath) {
+	scrollBar.loadImage(imagePath);
+	GLboolean origWrapTextFlag = wrapTextFlag;
+	if (scrollBar.isImageLoaded()) wrapTextFlag = true;
+	else wrapTextFlag = false;
+	if (origWrapTextFlag != wrapTextFlag) analyzeText(0);
 }
 
 // If we've scrolled, we have a hidden upper left corner
@@ -660,7 +670,10 @@ void textBox::callGlfwMouseButtonCallback(GLFWwindow* window, int button, int ac
 	// If we clicked on the scroll bar, use its callback
 	// Also tell the scroll bar when we release
 	if (scrollBar.testPointInBounds(clickPosition_world) || action == GLFW_RELEASE) {
+		int nRows = (int)lineBreakIndices.size() + 1;
+		scrollBar.scrollRelativeBarJump = 1.0f / nRows;
 		scrollBar.callGlfwMouseButtonCallback(window, button, action, mods);
+		return;
 	}
 
 	// Text box only cares about presses, not releases (for now)
@@ -725,7 +738,10 @@ GLboolean textBox::testPointInBounds(vec2 testPoint) {
 
 // Analyzes text for line breaks and also figures out where the cursor belongs in the worldspace
 void textBox::analyzeText(int startAtIndex) {
-	if (!textFont) return;
+	if (!textFont || !wrapTextFlag) {
+		lineBreakIndices.clear();
+		return;
+	}
 
 	GLboolean canBreakNow = false; // always go one extra line
 	int i;

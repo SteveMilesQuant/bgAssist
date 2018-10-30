@@ -63,7 +63,7 @@ public:
 	void setBoxLocation(vec2 inUpperLeftCornerLocation);
 	void setBoxDimensions(vec2 inBoxDim); // zero or negative means unfettered
 	void setScrollBarWidth(GLfloat inWidth);
-	void loadScrollBarImage(const char * imagePath) { scrollBar.loadImage(imagePath); }
+	void loadScrollBarImage(const char * imagePath);
 	void setTextHeight(GLfloat inHeight);
 	void setFont(font * inTextFont);
 
@@ -110,6 +110,7 @@ private:
 	int cursorRowIdx;
 
 	scrollBar scrollBar;
+	GLboolean wrapTextFlag; // flag for whether to wrap text (true if scroll bar is set up with image)
 	GLboolean isSelectedFlag; // is this object selected?
 	GLboolean draggingFlag; // are we dragging?
 	GLboolean movingFlag; // are we moving text?

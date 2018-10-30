@@ -29,6 +29,7 @@ public:
 	GLfloat getBarRelativePosition() { return barRelativePosition; }
 
 	void loadImage(const char * imagePath);
+	GLboolean isImageLoaded() { return (barImageId > 0); }
 	void draw();
 	void callGlfwCharModsCallback(GLFWwindow* window, unsigned int codepoint, int mods);
 	void callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);

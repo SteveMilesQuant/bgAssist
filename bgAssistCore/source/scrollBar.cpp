@@ -167,7 +167,7 @@ void scrollBar::updateVertices() {
 
 
 void scrollBar::draw() {
-	if (barRelativeLength >= 1.0f) return; // don't draw if we're not really scrolling
+	if (barRelativeLength >= 1.0f || barImageId < 0) return; // don't draw if we're not really scrolling
 
 	passBuffersToGLM();
 	updateVertices();
