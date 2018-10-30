@@ -312,21 +312,39 @@ vec2 textBox::drawOneChar(char inChar, vec2 upperLeftCorner) {
 	vertices[3] = upperRightCorner + vec2(0, -textHeight);
 
 	// Adjust for scrolling out of box
-	GLfloat uvOrigHeight = uvs[3].y - uvs[0].y;
-	GLfloat verticesOrigHeight = vertices[0].y - vertices[3].y;
+	vec2 uvOrigDim = uvs[3] - uvs[0];
+	vec2 verticesOrigDim = vertices[3] - vertices[0];
+	verticesOrigDim.y *= -1;
 	GLfloat trimTop = vertices[0].y - upperLeftCornerLocation.y;
 	GLfloat trimBottom = (boxDimensions.y > 0)? upperLeftCornerLocation.y - boxDimensions.y - vertices[3].y : 0;
-	if (fmax(trimTop, trimBottom) >= verticesOrigHeight) goto Done; // nothing left to draw
+	GLfloat trimLeft = upperLeftCornerLocation.x - vertices[0].x;
+	GLfloat trimRight = (boxDimensions.x > 0 && !wrapTextFlag)? vertices[3].x - upperLeftCornerLocation.x - boxDimensions.x : 0;
+
+	if (fmax(trimTop, trimBottom) >= verticesOrigDim.y || fmax(trimLeft, trimRight) >= verticesOrigDim.x) {
+		goto Done; // nothing left to draw
+	}
 	if (trimTop > 0) {
 		for (int i = 0; i < 2; i++) {
-			vertices[i].y = vertices[i].y - trimTop;
-			uvs[i].y = uvs[i].y + trimTop / verticesOrigHeight * uvOrigHeight;
+			vertices[i].y -= trimTop;
+			uvs[i].y += trimTop / verticesOrigDim.y * uvOrigDim.y;
 		}
 	}
 	if (trimBottom > 0) {
 		for (int i = 2; i < 4; i++) {
-			vertices[i].y = vertices[i].y + trimBottom;
-			uvs[i].y = uvs[i].y - trimBottom / verticesOrigHeight * uvOrigHeight;
+			vertices[i].y += trimBottom;
+			uvs[i].y -= trimBottom / verticesOrigDim.y * uvOrigDim.y;
+		}
+	}
+	if (trimLeft > 0) {
+		for (int i = 0; i < 4; i += 2) {
+			vertices[i].x += trimLeft;
+			uvs[i].x += trimLeft / verticesOrigDim.x * uvOrigDim.x;
+		}
+	}
+	if (trimRight > 0) {
+		for (int i = 1; i < 4; i += 2) {
+			vertices[i].x -= trimRight;
+			uvs[i].x -= trimRight / verticesOrigDim.x * uvOrigDim.x;
 		}
 	}
 
@@ -386,7 +404,12 @@ void textBox::drawCursor(vec2 topLocation) {
 	// Don't draw any part of the cursor that's out of the current view
 	GLfloat maxY = upperLeftCornerLocation.y;
 	GLfloat minY = upperLeftCornerLocation.y - boxDimensions.y;
-	if (cursorVertices[0].y <= minY || cursorVertices[3].y >= maxY) return;
+	GLfloat maxX = upperLeftCornerLocation.x + boxDimensions.x;
+	GLfloat minX = upperLeftCornerLocation.x;
+	if (cursorVertices[0].y <= minY || cursorVertices[3].y >= maxY ||
+		cursorVertices[0].x <= minX || cursorVertices[3].x >= maxX) {
+		return;
+	}
 	for (int i = 0; i < 2; i++) {
 		cursorVertices[i].y = fmin(cursorVertices[i].y, maxY);
 		cursorVertices[i + 2].y = fmax(cursorVertices[i+2].y, minY);

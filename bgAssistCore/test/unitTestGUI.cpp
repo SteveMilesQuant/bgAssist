@@ -164,7 +164,7 @@ int main(void)
 	singleLineTextBox.cursorWidth = 4.0f / screenWidth;
 	singleLineTextBox.setTextHeight(textHeight_screen);
 	singleLineTextBox.setBoxDimensions(vec2(2.0f*(1.0f - marginWidth), textHeight_screen));
-	singleLineTextBox.setText("Draw this text now! This is too long! Long! Long! Longgg");
+	singleLineTextBox.setText("Draw this text now! This is too long! Long! Long! Longgg! Longest ever!");
 	singleLineTextBox.setBoxLocation(vec2(startPos.x, startPos.y - 5.5 * textHeight_screen));
 	singleLineTextBox.setTextColor(vec4(0, 0, 0.7, 1)); // blue, opaque
 
