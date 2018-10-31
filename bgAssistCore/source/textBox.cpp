@@ -33,6 +33,7 @@ undoRedoUnit::~undoRedoUnit() {
 
 textBox::textBox() {
 	upperLeftCornerLocation = vec2(0,0);
+	locationXShift = 0.0f;
 	textFont = NULL;
 	textHeight = 0;
 	textColor = vec4(1);
@@ -84,6 +85,7 @@ void textBox::copyTextBox(const textBox & inTextBox) {
 	if (this == &inTextBox) return;
 
 	upperLeftCornerLocation = inTextBox.upperLeftCornerLocation;
+	locationXShift = inTextBox.locationXShift;
 	textFont = inTextBox.textFont;
 	textHeight = inTextBox.textHeight;
 	textColor = inTextBox.textColor;
@@ -188,7 +190,7 @@ void textBox::setCursorProgramId(GLuint inProgramId) {
 
 void textBox::setText(string inText) {
 	text = inText;
-	setCursorIndex((int)text.length());
+	setCursorIndex(0);
 	dragCursorIndex = cursorIndex;
 	analyzeText(0); // fully reanalyze the text for line breaks
 }
@@ -246,7 +248,7 @@ vec2 textBox::calcEffectiveLocation() {
 	int nRows = (int)lineBreakIndices.size() + 1;
 	GLfloat effectiveBoxHeight = textHeight * nRows;
 	GLfloat posAdj = scrollBar.getBarRelativePosition() * effectiveBoxHeight;
-	return upperLeftCornerLocation + vec2(0, posAdj);
+	return upperLeftCornerLocation + vec2(locationXShift, posAdj);
 }
 
 // Draw text and maybe scroll bar
@@ -406,8 +408,8 @@ void textBox::drawCursor(vec2 topLocation) {
 	GLfloat minY = upperLeftCornerLocation.y - boxDimensions.y;
 	GLfloat maxX = upperLeftCornerLocation.x + boxDimensions.x;
 	GLfloat minX = upperLeftCornerLocation.x;
-	if (cursorVertices[0].y <= minY || cursorVertices[3].y >= maxY ||
-		cursorVertices[0].x <= minX || cursorVertices[3].x >= maxX) {
+	if (cursorVertices[0].y < minY || cursorVertices[3].y > maxY ||
+		cursorVertices[0].x < minX || cursorVertices[3].x > maxX) {
 		return;
 	}
 	for (int i = 0; i < 2; i++) {
@@ -514,6 +516,7 @@ void textBox::callGlfwKeyCallback(GLFWwindow* window, int key, int scancode, int
 	case GLFW_KEY_UP:
 	case GLFW_KEY_DOWN: {
 		int startAtIndex, endAtCnt;
+		if (!wrapTextFlag) return;
 
 		if (key == GLFW_KEY_DOWN) {
 			startAtIndex = (int)text.length();
@@ -761,7 +764,7 @@ GLboolean textBox::testPointInBounds(vec2 testPoint) {
 
 // Analyzes text for line breaks and also figures out where the cursor belongs in the worldspace
 void textBox::analyzeText(int startAtIndex) {
-	if (!textFont || !wrapTextFlag) {
+	if (!textFont) {
 		lineBreakIndices.clear();
 		return;
 	}
@@ -787,7 +790,7 @@ void textBox::analyzeText(int startAtIndex) {
 	int lastSpaceIdx = startAtIndex - 1;
 	for (int i = startAtIndex; i < text.length(); i++) {
 		if (i == cursorIndex) {
-			cursorXCoord_textBoxSpace = lineWidth;
+			setCursorXcoord(lineWidth);
 			cursorRowIdx = (int)lineBreakIndices.size();
 			cursorLineWidthFromLastSpace = lineWidthFromLastSpace;
 		}
@@ -795,6 +798,9 @@ void textBox::analyzeText(int startAtIndex) {
 		float charWidth = textFont->getCharUnitWidth(text[i]) * textHeight;
 		lineWidth += charWidth;
 		lineWidthFromLastSpace += charWidth;
+
+		// Don't break any lines if we're not wrapping text
+		if (!wrapTextFlag) continue;
 
 		if (text[i] == ' ' || text[i] == '\n') {
 			lastSpaceIdx = i;
@@ -806,7 +812,7 @@ void textBox::analyzeText(int startAtIndex) {
 				lineBreakIndices.push_back(lastSpaceIdx);
 				lineWidth = lineWidthFromLastSpace;
 				if (cursorIndex <= i && cursorIndex > lastSpaceIdx) {
-					cursorXCoord_textBoxSpace = cursorLineWidthFromLastSpace;
+					setCursorXcoord(cursorLineWidthFromLastSpace);
 					cursorRowIdx = (int)lineBreakIndices.size();
 				}
 			}
@@ -821,7 +827,7 @@ void textBox::analyzeText(int startAtIndex) {
 	}
 
 	if (cursorIndex >= text.length()) {
-		cursorXCoord_textBoxSpace = lineWidth;
+		setCursorXcoord(lineWidth);
 		cursorRowIdx = (int)lineBreakIndices.size();
 	}
 
@@ -869,8 +875,8 @@ void textBox::analyzeScrollBar() {
 // Set the cursor to wherever the mouse currently is
 void textBox::setCursorToCurrentMousPos(vec2 clickPosition_world) {
 	vec2 effectiveUpperLeftCorner = calcEffectiveLocation();
-	vec2 tempVec = clickPosition_world - effectiveUpperLeftCorner;
-	vec2 clickPosition_textbox(tempVec.x, -tempVec.y); // need to reverse direction of y again
+	vec2 clickPosition_textbox = clickPosition_world - effectiveUpperLeftCorner;
+	clickPosition_textbox.y *= -1.0f; // need to reverse direction of y again
 
 	// Find the row
 	int rowIdx = (int)(clickPosition_textbox.y / textHeight);
@@ -899,7 +905,7 @@ void textBox::setCursorToCurrentMousPos(vec2 clickPosition_world) {
 		}
 		lineWidth += charWidth;
 	}
-	cursorXCoord_textBoxSpace = lineWidth;
+	setCursorXcoord(lineWidth);
 }
 
 // Insert text at cursor, or replace highlighted text
@@ -1027,3 +1033,15 @@ void textBox::moveHighlightedTextToCursor(stack<undoRedoUnit> &outStack) {
 	analyzeText(startAnalysisAt);
 }
 
+
+// Set cursorXCoord_textBoxSpace
+void textBox::setCursorXcoord(GLfloat inXCoord_textBoxSpace) {
+	vec2 effectiveUpperLeftCorner = calcEffectiveLocation();
+	cursorXCoord_textBoxSpace = inXCoord_textBoxSpace;
+	if (cursorXCoord_textBoxSpace + effectiveUpperLeftCorner.x + cursorWidth > upperLeftCornerLocation.x + boxDimensions.x) {
+		locationXShift = boxDimensions.x - (cursorXCoord_textBoxSpace + cursorWidth);
+	}
+	else if (cursorXCoord_textBoxSpace + effectiveUpperLeftCorner.x < upperLeftCornerLocation.x) {
+		locationXShift = -cursorXCoord_textBoxSpace;
+	}
+}

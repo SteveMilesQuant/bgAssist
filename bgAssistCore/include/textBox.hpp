@@ -82,6 +82,7 @@ private:
 	GLfloat textHeight;
 	font * textFont;
 	vec2 upperLeftCornerLocation;
+	GLfloat locationXShift;
 	vec2 boxDimensions;
 	GLfloat boxEffectiveWidth; // width minus the scroll bar
 	vector<int> lineBreakIndices; // line breaks as indices in text
@@ -132,5 +133,6 @@ private:
 	void deleteTextAtCursor(int deleteCursorIndex, stack<undoRedoUnit> &outStack);
 	void deleteTextAtCursor(stack<undoRedoUnit> &outStack) { deleteTextAtCursor(cursorIndex, outStack); }
 	void moveHighlightedTextToCursor(stack<undoRedoUnit> &outStack);
+	void setCursorXcoord(GLfloat inXCoord_textBoxSpace);
 };
 
